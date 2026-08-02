@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bug Bounty Report</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Vite's development server normally never registers a worker. If this
+      // origin was previously used for a preview, clear only the application
+      // shell cache before loading modules so stale bundles cannot blank dev.
+      if (location.hostname === "localhost" && location.port === "5173" && "serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          return Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+        }).then(function () {
+          if ("caches" in window) return caches.keys().then(function (keys) {
+            return Promise.all(keys.filter(function (key) { return key.indexOf("bbr-shell-") === 0; }).map(function (key) { return caches.delete(key); }));
+          });
+          return undefined;
+        }).catch(function () { /* PWA support is optional during development. */ });
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

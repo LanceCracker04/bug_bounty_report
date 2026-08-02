@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { background: #0b0d10; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; }
+  button, input, select, textarea { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: 0.45; }
+  :focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  ::selection { background: #155e75; color: #ecfeff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+@layer components {
+  .nav-item { @apply flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/70 hover:text-slate-100; }
+  .nav-item-active { @apply bg-slate-800 text-cyan-200; }
+  .input-field { @apply rounded-md border border-slate-700 bg-[#0d1014] px-3 py-2 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-700 focus:ring-2 focus:ring-cyan-900/50; }
+  .input-error { @apply border-red-800 focus:border-red-700 focus:ring-red-950; }
+  .field-group { @apply flex flex-col gap-1.5 text-sm font-medium text-slate-400; }
+  .field-group > span { @apply text-xs uppercase tracking-wide text-slate-500; }
+  .button-primary { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-cyan-700 bg-cyan-800 px-3.5 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-500 hover:bg-cyan-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400; }
+  .button-secondary { @apply inline-flex items-center justify-center rounded-md border border-slate-700 bg-slate-800 px-3.5 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400; }
+  .button-danger { @apply inline-flex items-center justify-center rounded-md border border-red-900 bg-red-950 px-3.5 py-2 text-sm font-medium text-red-200 transition-colors hover:border-red-700 hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400; }
+  .button-link { @apply text-sm font-medium text-cyan-400 transition-colors hover:text-cyan-300; }
+  .badge { @apply inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-xs font-medium; }
+  .table-action { @apply rounded px-2 py-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-cyan-300; }
+  .table-action-danger { @apply rounded px-2 py-1 text-slate-400 transition-colors hover:bg-red-950/70 hover:text-red-300; }
+  .editor-section { @apply rounded-lg border border-slate-800 bg-[#101318] p-5 sm:p-6; }
+  .section-heading { @apply mb-6 flex items-start gap-3 border-b border-slate-800 pb-5; }
+  .section-heading > span { @apply mt-0.5 rounded border border-cyan-900 bg-cyan-950/50 px-1.5 py-0.5 font-mono text-xs text-cyan-400; }
+  .section-heading h2 { @apply text-base font-semibold text-slate-200; }
+  .section-heading p { @apply mt-1 text-sm text-slate-500; }
+  .section-index { @apply rounded border border-cyan-900 bg-cyan-950/50 px-1.5 py-0.5 font-mono text-xs text-cyan-400; }
+}
+
+.report-preview-shell {
+  min-height: 100vh;
+  background: #1a1d21;
+  padding: 1.5rem;
+}
+
+.report-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  overflow: auto;
+  background: #121417;
+}
+
+.report-preview-controls {
+  display: flex;
+  max-width: 210mm;
+  margin: 0 auto 1rem;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.report-document {
+  width: min(210mm, 100%);
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 18mm;
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 28%);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 1.25rem;
+}
+
+.report-eyebrow {
+  margin: 0 0 0.35rem;
+  color: #64748b;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.report-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.8rem, 4vw, 2.55rem);
+  line-height: 1.15;
+}
+
+.report-metadata {
+  position: relative;
+  margin-top: 1.5rem;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.report-metadata dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+  padding-right: 7rem;
+}
+
+.report-metadata dt {
+  color: #64748b;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.report-metadata dd {
+  margin: 0.18rem 0 0;
+  color: #1e293b;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.report-severity {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  display: flex;
+  min-width: 5.2rem;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid currentColor;
+  padding: 0.35rem 0.5rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.report-severity span { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.report-severity strong { font-size: 0.86rem; }
+.report-severity-informational { color: #475569; background: #f1f5f9; }
+.report-severity-low { color: #1d4ed8; background: #eff6ff; }
+.report-severity-medium { color: #a16207; background: #fefce8; }
+.report-severity-high { color: #c2410c; background: #fff7ed; }
+.report-severity-critical { color: #b91c1c; background: #fef2f2; }
+
+.report-toc {
+  margin-top: 1.5rem;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 1.25rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.report-toc h2 { margin: 0; color: #0f172a; font-size: 0.95rem; }
+.report-toc ol { columns: 2; margin: 0.75rem 0 0; padding-left: 1.25rem; }
+.report-toc li { margin: 0.28rem 0; color: #475569; font-size: 0.78rem; }
+.report-toc a { color: inherit; text-decoration: none; }
+
+.report-section { margin-top: 1.8rem; break-inside: avoid; }
+.report-section h2 { display: flex; align-items: center; gap: 0.65rem; margin: 0 0 0.8rem; color: #0f172a; font-family: "Segoe UI", Arial, sans-serif; font-size: 1.08rem; }
+.report-section h2 span { color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.7rem; }
+.report-prose { color: #334155; font-size: 0.92rem; line-height: 1.7; overflow-wrap: anywhere; }
+.report-step { break-inside: avoid; border-left: 3px solid #cbd5e1; padding: 0.75rem 0 0.75rem 1rem; }
+.report-step h3, .report-evidence h3 { margin: 0; color: #1e293b; font-family: "Segoe UI", Arial, sans-serif; font-size: 0.9rem; }
+.report-evidence { break-inside: avoid; border: 1px solid #e2e8f0; padding: 1rem; }
+.report-code { max-width: 100%; overflow: auto; margin: 0.75rem 0 0; background: #0f172a; padding: 0.85rem; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; line-height: 1.55; white-space: pre-wrap; }
+.report-print-footer { display: none; }
+
+@media (max-width: 640px) {
+  .report-preview-shell { padding: 0.5rem; }
+  .report-preview-controls { align-items: stretch; flex-direction: column; }
+  .report-preview-controls > div { flex-wrap: wrap; }
+  .report-document { padding: 1.5rem; }
+  .report-header { flex-direction: column; }
+  .report-header .text-right { text-align: left; }
+  .report-metadata dl { grid-template-columns: 1fr; padding-right: 0; }
+  .report-severity { position: static; width: fit-content; margin-top: 1rem; }
+  .report-toc ol { columns: 1; }
+}
+
+@page { size: A4; margin: 15mm; }
+
+@media print {
+  html, body { background: #fff !important; }
+  .app-shell, .report-preview-controls { display: none !important; }
+  .report-preview-shell, .report-preview-overlay { position: static !important; min-height: 0 !important; overflow: visible !important; background: #fff !important; padding: 0 !important; }
+  .report-document { width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+  .report-header, .report-metadata, .report-toc, .report-section { break-inside: avoid; }
+  .report-section h2 { break-after: avoid; }
+  .report-step, .report-evidence { break-inside: avoid; }
+  .report-print-footer { display: block; position: fixed; bottom: 0; left: 0; right: 0; color: #64748b; font-family: "Segoe UI", Arial, sans-serif; font-size: 8pt; text-align: center; }
+}

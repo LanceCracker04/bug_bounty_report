@@ -1,0 +1,85 @@
+import { StyleSheet } from "@react-pdf/renderer";
+
+export const pdfColors = {
+  navy: "#0F172A",
+  slate: "#334155",
+  muted: "#64748B",
+  light: "#F8FAFC",
+  border: "#CBD5E1",
+  cyan: "#0891B2",
+  critical: "#B91C1C",
+  high: "#C2410C",
+  medium: "#B45309",
+  low: "#1D4ED8",
+  informational: "#475569",
+};
+
+export const pdfStyles = StyleSheet.create({
+  page: { paddingTop: 42, paddingRight: 40, paddingBottom: 44, paddingLeft: 40, fontFamily: "Helvetica", fontSize: 10, color: pdfColors.navy, backgroundColor: "#FFFFFF" },
+  runningHeader: { position: "absolute", top: 18, left: 40, right: 40, fontSize: 7.5, color: pdfColors.muted, fontFamily: "Helvetica-Bold", letterSpacing: 0.4 },
+  footer: { position: "absolute", bottom: 18, left: 40, right: 40, fontSize: 7.5, color: pdfColors.muted, textAlign: "center" },
+  coverHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", borderBottomWidth: 1, borderBottomColor: pdfColors.border, paddingBottom: 14, marginBottom: 12 },
+  eyebrow: { fontSize: 8, color: pdfColors.cyan, fontFamily: "Helvetica-Bold", letterSpacing: 0.8 },
+  coverName: { marginTop: 4, fontSize: 13, color: pdfColors.navy, fontFamily: "Helvetica-Bold", letterSpacing: 0.2 },
+  sanitizedBadge: { borderWidth: 1, borderColor: pdfColors.cyan, backgroundColor: "#ECFEFF", color: "#0E7490", borderRadius: 3, paddingVertical: 5, paddingHorizontal: 8, fontSize: 7.5, fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
+  sanitizedNotice: { color: pdfColors.muted, fontSize: 8.5, marginBottom: 12 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
+  title: { width: "76%", fontSize: 22, lineHeight: 1.16, fontFamily: "Helvetica-Bold", color: pdfColors.navy },
+  severityBadge: { borderRadius: 3, paddingVertical: 6, paddingHorizontal: 8, minWidth: 66, alignItems: "center" },
+  severityBadgeText: { color: "#FFFFFF", fontSize: 8, fontFamily: "Helvetica-Bold" },
+  overview: { flexDirection: "row", flexWrap: "wrap", marginBottom: 13, borderTopWidth: 1, borderTopColor: pdfColors.border, paddingTop: 9 },
+  overviewItem: { width: "50%", paddingRight: 12, marginBottom: 6 },
+  overviewLabel: { fontSize: 7.5, color: pdfColors.muted, textTransform: "uppercase", fontFamily: "Helvetica-Bold", letterSpacing: 0.4 },
+  overviewValue: { marginTop: 2, fontSize: 9.5, color: pdfColors.slate, lineHeight: 1.3 },
+  metadataGrid: { flexDirection: "row", flexWrap: "wrap", borderTopWidth: 1, borderLeftWidth: 1, borderColor: pdfColors.border, marginBottom: 14 },
+  metadataCell: { width: "50%", minHeight: 38, borderRightWidth: 1, borderBottomWidth: 1, borderColor: pdfColors.border, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: pdfColors.light },
+  metadataLabel: { fontSize: 7.5, color: pdfColors.muted, textTransform: "uppercase", fontFamily: "Helvetica-Bold", letterSpacing: 0.35 },
+  metadataValue: { marginTop: 2, fontSize: 9.2, lineHeight: 1.3, color: pdfColors.slate },
+  mono: { fontFamily: "Courier" },
+  riskSummary: { flexDirection: "row", borderWidth: 1, borderColor: "#A5F3FC", backgroundColor: "#F0FDFA", borderRadius: 3, padding: 10, marginBottom: 15, alignItems: "center" },
+  riskScore: { width: 64, fontSize: 24, lineHeight: 1, color: pdfColors.cyan, fontFamily: "Helvetica-Bold" },
+  riskDetails: { flex: 1 },
+  riskHeading: { color: "#0E7490", fontSize: 8, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  riskText: { marginTop: 3, fontSize: 9.2, color: pdfColors.slate, lineHeight: 1.35 },
+  section: { marginTop: 15, marginBottom: 4 },
+  sectionHeading: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  sectionNumber: { color: pdfColors.cyan, fontSize: 8, fontFamily: "Helvetica-Bold", marginRight: 7 },
+  sectionTitle: { color: pdfColors.navy, fontSize: 14, fontFamily: "Helvetica-Bold" },
+  sectionLine: { flex: 1, height: 1, backgroundColor: pdfColors.border, marginLeft: 9 },
+  body: { fontSize: 10, color: pdfColors.slate, lineHeight: 1.45, marginBottom: 7 },
+  stepCard: { borderWidth: 1, borderColor: pdfColors.border, borderRadius: 3, padding: 10, marginBottom: 9, backgroundColor: "#FFFFFF" },
+  stepEyebrow: { fontSize: 7.5, color: pdfColors.cyan, fontFamily: "Helvetica-Bold", letterSpacing: 0.55 },
+  stepTitle: { fontSize: 11, color: pdfColors.navy, fontFamily: "Helvetica-Bold", marginTop: 3, marginBottom: 7 },
+  fieldLabel: { fontSize: 8, color: pdfColors.muted, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  fieldValue: { fontSize: 9.5, color: pdfColors.slate, lineHeight: 1.4 },
+  expectedBlock: { marginTop: 8, backgroundColor: pdfColors.light, borderLeftWidth: 3, borderLeftColor: pdfColors.slate, padding: 7 },
+  observedBlock: { marginTop: 7, backgroundColor: "#ECFEFF", borderLeftWidth: 3, borderLeftColor: pdfColors.cyan, padding: 7 },
+  impactCallout: { borderWidth: 1, borderColor: "#BAE6FD", backgroundColor: "#F0F9FF", borderRadius: 3, padding: 10 },
+  evidenceCard: { borderWidth: 1, borderColor: pdfColors.border, borderRadius: 3, padding: 10, marginBottom: 9 },
+  evidenceHeading: { fontSize: 10.5, color: pdfColors.navy, fontFamily: "Helvetica-Bold" },
+  evidenceMeta: { fontSize: 8, color: pdfColors.muted, marginTop: 3, marginBottom: 7 },
+  codeBlock: { marginTop: 7, padding: 8, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: pdfColors.light, fontFamily: "Courier", fontSize: 8.3, color: pdfColors.slate, lineHeight: 1.35 },
+  evidenceImage: { width: "100%", maxHeight: 330, objectFit: "contain", marginTop: 8, borderWidth: 1, borderColor: pdfColors.border },
+  imageLabel: { marginTop: 5, fontSize: 8, color: pdfColors.muted, fontFamily: "Helvetica-Bold" },
+  link: { color: "#0369A1", textDecoration: "underline", fontSize: 9.2, lineHeight: 1.35 },
+  remediation: { borderWidth: 1, borderColor: "#A5F3FC", backgroundColor: "#F0FDFA", borderRadius: 3, padding: 10 },
+  remediationMarker: { color: pdfColors.cyan, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 4 },
+  reference: { marginBottom: 8 },
+  referenceTitle: { fontSize: 9.8, color: pdfColors.slate, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  timelineItem: { flexDirection: "row", marginBottom: 8 },
+  timelineDate: { width: 72, fontSize: 8.5, color: pdfColors.muted, fontFamily: "Helvetica-Bold" },
+  timelineMarker: { width: 12, height: 12, borderRadius: 6, backgroundColor: pdfColors.cyan, marginRight: 8, marginTop: 1 },
+  timelineEvent: { flex: 1, fontSize: 9.5, color: pdfColors.slate, lineHeight: 1.4 },
+});
+
+export function severityColor(severity: string): string {
+  return ({ Critical: pdfColors.critical, High: pdfColors.high, Medium: pdfColors.medium, Low: pdfColors.low, Informational: pdfColors.informational } as Record<string, string>)[severity] ?? pdfColors.informational;
+}
+
+export function breakLongTokens(value: string): string {
+  return value.replace(/([/?&=._:#-])/g, "$1\u200B");
+}
+
+export function hasTechnicalFormatting(value: string): boolean {
+  return /(?:HTTP\/\d|\{\s*"|\b(?:GET|POST|PUT|PATCH|DELETE)\s+\/|\b[A-F0-9]{16,}\b)/i.test(value);
+}
