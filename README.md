@@ -39,3 +39,6 @@ Use this project only for systems and programs you are explicitly authorized to 
 ## Built with
 
 React, TypeScript, Vite, Tailwind CSS, and browser-native storage, with PDF export powered by `@react-pdf/renderer`.
+
+
+https://bug-bounty-report.vercel.app/
