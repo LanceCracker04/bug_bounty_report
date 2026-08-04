@@ -30,17 +30,25 @@ function evidenceType(type: string): "Text" | "URL" | "Image" | "Transcript" {
   return "Text";
 }
 
-export function buildSanitizedPdfData(copy: SanitizedReportCopy, options: BuildSanitizedPdfDataOptions = {}): SanitizedPdfData {
+export function buildSanitizedPdfData(
+  copy: SanitizedReportCopy,
+  options: BuildSanitizedPdfDataOptions = {},
+): SanitizedPdfData {
   const report = copy.report;
   const structuredSteps = report.structuredSteps.length
     ? report.structuredSteps.map((step) => ({
-      title: plainText(step.title) ?? "Reproduction step",
-      instruction: plainText(step.instruction) ?? "",
-      expectedResult: plainText(step.expectedResult),
-      observedResult: plainText(step.actualResult),
-    }))
+        title: plainText(step.title) ?? "Reproduction step",
+        instruction: plainText(step.instruction) ?? "",
+        expectedResult: plainText(step.expectedResult),
+        observedResult: plainText(step.actualResult),
+      }))
     : report.reproductionSteps.trim()
-      ? [{ title: "Reproduction notes", instruction: plainText(report.reproductionSteps) ?? "" }]
+      ? [
+          {
+            title: "Reproduction notes",
+            instruction: plainText(report.reproductionSteps) ?? "",
+          },
+        ]
       : [];
 
   const evidenceItems = report.evidenceItems.map((item, index) => {
@@ -51,12 +59,18 @@ export function buildSanitizedPdfData(copy: SanitizedReportCopy, options: BuildS
       type: evidenceType(item.type),
       description: plainText(item.description),
       ...(item.type === "url" && url ? { url } : {}),
-      ...(item.type === "image" && image ? { imageDataUrl: image.dataUrl, imageLabel: image.label } : {}),
+      ...(item.type === "image" && image
+        ? { imageDataUrl: image.dataUrl, imageLabel: image.label }
+        : {}),
     };
   });
 
   if (report.evidence.trim()) {
-    evidenceItems.unshift({ title: "Sanitized evidence notes", type: "Text", description: plainText(report.evidence) });
+    evidenceItems.unshift({
+      title: "Sanitized evidence notes",
+      type: "Text",
+      description: plainText(report.evidence),
+    });
   }
 
   return {
@@ -84,8 +98,18 @@ export function buildSanitizedPdfData(copy: SanitizedReportCopy, options: BuildS
     securityImpact: plainText(report.impact),
     evidenceItems,
     remediation: plainText(report.remediation),
-    references: report.references.map((reference) => ({ label: plainText(reference.label) ?? "Reference", url: reference.url.trim() })).filter((reference) => Boolean(reference.url)),
-    disclosureTimeline: report.disclosureTimeline.map((item) => ({ date: plainText(item.date), event: plainText(item.event) ?? "" })).filter((item) => Boolean(item.event)),
+    references: report.references
+      .map((reference) => ({
+        label: plainText(reference.label) ?? "Reference",
+        url: reference.url.trim(),
+      }))
+      .filter((reference) => Boolean(reference.url)),
+    disclosureTimeline: report.disclosureTimeline
+      .map((item) => ({
+        date: plainText(item.date),
+        event: plainText(item.event) ?? "",
+      }))
+      .filter((item) => Boolean(item.event)),
     sanitizationLabel: `${copy.profile.mode} sanitization profile`,
   };
 }

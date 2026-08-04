@@ -15,8 +15,183 @@ interface ReportTableProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-export function ReportTable({ reports, onOpen, onPrepareSubmission, onPreview, onExport, onDuplicate, onDelete, selectedIds, onSelect, onSelectAll }: ReportTableProps) {
+export function ReportTable({
+  reports,
+  onOpen,
+  onPrepareSubmission,
+  onPreview,
+  onExport,
+  onDuplicate,
+  onDelete,
+  selectedIds,
+  onSelect,
+  onSelectAll,
+}: ReportTableProps) {
   const selectable = Boolean(selectedIds && onSelect && onSelectAll);
-  const allSelected = selectable && reports.length > 0 && reports.every((report) => selectedIds?.has(report.id));
-  return <div className="overflow-x-auto rounded-lg border border-slate-800 bg-[#101318]"><table className="w-full min-w-[1450px] text-left text-sm"><caption className="sr-only">Report list</caption><thead className="border-b border-slate-800 bg-[#14181e] text-xs uppercase tracking-wide text-slate-500"><tr>{selectable && <th className="w-11 px-3 py-3"><input aria-label="Select all visible reports" className="h-4 w-4 accent-cyan-700" type="checkbox" checked={allSelected} onChange={(event) => onSelectAll?.(event.target.checked)} /></th>}<th className="px-5 py-3 font-medium">Report Title</th><th className="px-4 py-3 font-medium">Reference</th><th className="px-4 py-3 font-medium">Target</th><th className="px-4 py-3 font-medium">Vulnerability</th><th className="px-4 py-3 font-medium">Severity</th><th className="px-4 py-3 font-medium">CVSS</th><th className="px-4 py-3 font-medium">Quality</th><th className="px-4 py-3 font-medium">Submission</th><th className="px-4 py-3 font-medium">Evidence</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Updated</th><th className="px-5 py-3 text-right font-medium">Actions</th></tr></thead><tbody className="divide-y divide-slate-800">{reports.map((report) => <tr className="transition-colors hover:bg-slate-800/30" key={report.id}>{selectable && <td className="px-3 py-4"><input aria-label={`Select ${report.title || "untitled report"}`} className="h-4 w-4 accent-cyan-700" type="checkbox" checked={selectedIds?.has(report.id) ?? false} onChange={(event) => onSelect?.(report.id, event.target.checked)} /></td>}<td className="max-w-64 px-5 py-4"><button className="block max-w-full truncate text-left font-medium text-slate-200 hover:text-cyan-300" type="button" onClick={() => onOpen(report)}>{report.title || "Untitled report"}</button><span className="mt-1 block truncate text-xs text-slate-500">{report.programName || "No program specified"}</span>{report.regressionDetectedAt && <span className="mt-1 inline-block rounded border border-red-900 bg-red-950/40 px-1 py-0.5 text-xs text-red-200">Regression recorded</span>}</td><td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-cyan-400">{report.reportReference}</td><td className="max-w-44 truncate px-4 py-4 font-mono text-xs text-slate-400">{report.target || report.affectedAsset || "—"}</td><td className="max-w-40 truncate px-4 py-4 text-slate-400">{report.vulnerabilityType || "—"}</td><td className="px-4 py-4"><SeverityBadge severity={report.severity} /></td><td className="px-4 py-4 font-mono text-xs text-slate-400">{report.cvssScore || "—"}</td><td className="px-4 py-4"><span className="whitespace-nowrap text-xs text-slate-400">{report.qualityResult ? `${report.qualityResult.score}/100` : "Not checked"}</span></td><td className="max-w-36 px-4 py-4"><span className="block truncate text-xs text-slate-400">{report.submissionDetails.platform !== "Other" ? report.submissionDetails.platform : "—"}</span><span className="block truncate text-xs text-slate-500">{report.submissionDetails.outcome !== "Not Submitted" ? report.submissionDetails.outcome : "Not submitted"}</span></td><td className="px-4 py-4 text-center font-mono text-xs text-slate-400">{report.evidenceItems.length}</td><td className="px-4 py-4"><StatusBadge status={report.status} /></td><td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">{formatUpdatedAt(report.updatedAt)}</td><td className="px-5 py-4"><div className="flex justify-end gap-1 text-xs"><button className="table-action" type="button" onClick={() => onOpen(report)}>Open</button><button className="table-action" type="button" onClick={() => onPrepareSubmission(report)}>Submit</button><button className="table-action" type="button" onClick={() => onPreview(report)}>Preview</button><button className="table-action" type="button" onClick={() => onExport(report)}>Markdown</button><button className="table-action" type="button" onClick={() => onDuplicate(report)}>Duplicate</button><button className="table-action-danger" type="button" onClick={() => onDelete(report)}>Delete</button></div></td></tr>)}</tbody></table></div>;
+  const allSelected =
+    selectable &&
+    reports.length > 0 &&
+    reports.every((report) => selectedIds?.has(report.id));
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-800 bg-[#101318]">
+      <table className="w-full min-w-[1450px] text-left text-sm">
+        <caption className="sr-only">Report list</caption>
+        <thead className="border-b border-slate-800 bg-[#14181e] text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            {selectable && (
+              <th className="w-11 px-3 py-3">
+                <input
+                  aria-label="Select all visible reports"
+                  className="h-4 w-4 accent-cyan-700"
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(event) => onSelectAll?.(event.target.checked)}
+                />
+              </th>
+            )}
+            <th className="px-5 py-3 font-medium">Report Title</th>
+            <th className="px-4 py-3 font-medium">Reference</th>
+            <th className="px-4 py-3 font-medium">Target</th>
+            <th className="px-4 py-3 font-medium">Vulnerability</th>
+            <th className="px-4 py-3 font-medium">Severity</th>
+            <th className="px-4 py-3 font-medium">CVSS</th>
+            <th className="px-4 py-3 font-medium">Quality</th>
+            <th className="px-4 py-3 font-medium">Submission</th>
+            <th className="px-4 py-3 font-medium">Evidence</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">Updated</th>
+            <th className="px-5 py-3 text-right font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800">
+          {reports.map((report) => (
+            <tr
+              className="transition-colors hover:bg-slate-800/30"
+              key={report.id}
+            >
+              {selectable && (
+                <td className="px-3 py-4">
+                  <input
+                    aria-label={`Select ${report.title || "untitled report"}`}
+                    className="h-4 w-4 accent-cyan-700"
+                    type="checkbox"
+                    checked={selectedIds?.has(report.id) ?? false}
+                    onChange={(event) =>
+                      onSelect?.(report.id, event.target.checked)
+                    }
+                  />
+                </td>
+              )}
+              <td className="max-w-64 px-5 py-4">
+                <button
+                  className="block max-w-full truncate text-left font-medium text-slate-200 hover:text-cyan-300"
+                  type="button"
+                  onClick={() => onOpen(report)}
+                >
+                  {report.title || "Untitled report"}
+                </button>
+                <span className="mt-1 block truncate text-xs text-slate-500">
+                  {report.programName || "No program specified"}
+                </span>
+                {report.regressionDetectedAt && (
+                  <span className="mt-1 inline-block rounded border border-red-900 bg-red-950/40 px-1 py-0.5 text-xs text-red-200">
+                    Regression recorded
+                  </span>
+                )}
+              </td>
+              <td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-cyan-400">
+                {report.reportReference}
+              </td>
+              <td className="max-w-44 truncate px-4 py-4 font-mono text-xs text-slate-400">
+                {report.target || report.affectedAsset || "—"}
+              </td>
+              <td className="max-w-40 truncate px-4 py-4 text-slate-400">
+                {report.vulnerabilityType || "—"}
+              </td>
+              <td className="px-4 py-4">
+                <SeverityBadge severity={report.severity} />
+              </td>
+              <td className="px-4 py-4 font-mono text-xs text-slate-400">
+                {report.cvssScore || "—"}
+              </td>
+              <td className="px-4 py-4">
+                <span className="whitespace-nowrap text-xs text-slate-400">
+                  {report.qualityResult
+                    ? `${report.qualityResult.score}/100`
+                    : "Not checked"}
+                </span>
+              </td>
+              <td className="max-w-36 px-4 py-4">
+                <span className="block truncate text-xs text-slate-400">
+                  {report.submissionDetails.platform !== "Other"
+                    ? report.submissionDetails.platform
+                    : "—"}
+                </span>
+                <span className="block truncate text-xs text-slate-500">
+                  {report.submissionDetails.outcome !== "Not Submitted"
+                    ? report.submissionDetails.outcome
+                    : "Not submitted"}
+                </span>
+              </td>
+              <td className="px-4 py-4 text-center font-mono text-xs text-slate-400">
+                {report.evidenceItems.length}
+              </td>
+              <td className="px-4 py-4">
+                <StatusBadge status={report.status} />
+              </td>
+              <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                {formatUpdatedAt(report.updatedAt)}
+              </td>
+              <td className="px-5 py-4">
+                <div className="flex justify-end gap-1 text-xs">
+                  <button
+                    className="table-action"
+                    type="button"
+                    onClick={() => onOpen(report)}
+                  >
+                    Open
+                  </button>
+                  <button
+                    className="table-action"
+                    type="button"
+                    onClick={() => onPrepareSubmission(report)}
+                  >
+                    Submit
+                  </button>
+                  <button
+                    className="table-action"
+                    type="button"
+                    onClick={() => onPreview(report)}
+                  >
+                    Preview
+                  </button>
+                  <button
+                    className="table-action"
+                    type="button"
+                    onClick={() => onExport(report)}
+                  >
+                    Markdown
+                  </button>
+                  <button
+                    className="table-action"
+                    type="button"
+                    onClick={() => onDuplicate(report)}
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    className="table-action-danger"
+                    type="button"
+                    onClick={() => onDelete(report)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

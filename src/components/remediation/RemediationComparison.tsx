@@ -1,5 +1,101 @@
 import type { RetestRecord } from "../../types/phase6";
 import type { Report } from "../../types/report";
-import { comparisonMarkdown, createRemediationComparison } from "../../utils/remediationComparison";
-import { downloadMarkdown, safeMarkdownFilename } from "../../utils/markdownExport";
-export function RemediationComparison({ report, retest, onSaveNote }: { report: Report; retest: RetestRecord; onSaveNote: (summary: string) => void }) { const rows = createRemediationComparison(report, retest); const markdown = comparisonMarkdown(report, retest); const copy = async () => { await navigator.clipboard.writeText(markdown); }; return <section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">Original versus Retest</h2><p className="mt-1 text-sm text-slate-500">Observed during retest. This view does not claim a remediation is effective without your explicit confirmation.</p></div><div className="flex flex-wrap gap-2"><button className="button-secondary" type="button" onClick={() => void copy()}>Copy summary</button><button className="button-secondary" type="button" onClick={() => onSaveNote(markdown)}>Save as evidence note</button><button className="button-primary" type="button" onClick={() => downloadMarkdown(markdown, safeMarkdownFilename(`comparison-${report.title}`))}>Export Markdown</button></div></div><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><caption className="sr-only">Original and retest comparison</caption><thead className="text-xs uppercase text-slate-500"><tr><th className="p-2">Area</th><th className="p-2">Original</th><th className="p-2">Observed during retest</th><th className="p-2">Change</th></tr></thead><tbody>{rows.map((row) => <tr className="border-t border-slate-800" key={row.label}><th className="p-2 align-top font-medium text-slate-200">{row.label}</th><td className="max-w-xs whitespace-pre-wrap p-2 text-slate-400">{row.original}</td><td className="max-w-xs whitespace-pre-wrap p-2 text-slate-300">{row.current}</td><td className="p-2"><span className="badge border-slate-700 bg-slate-800 text-slate-200">{row.state}</span></td></tr>)}</tbody></table></div></section>; }
+import {
+  comparisonMarkdown,
+  createRemediationComparison,
+} from "../../utils/remediationComparison";
+import {
+  downloadMarkdown,
+  safeMarkdownFilename,
+} from "../../utils/markdownExport";
+export function RemediationComparison({
+  report,
+  retest,
+  onSaveNote,
+}: {
+  report: Report;
+  retest: RetestRecord;
+  onSaveNote: (summary: string) => void;
+}) {
+  const rows = createRemediationComparison(report, retest);
+  const markdown = comparisonMarkdown(report, retest);
+  const copy = async () => {
+    await navigator.clipboard.writeText(markdown);
+  };
+  return (
+    <section className="editor-section">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-200">
+            Original versus Retest
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Observed during retest. This view does not claim a remediation is
+            effective without your explicit confirmation.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => void copy()}
+          >
+            Copy summary
+          </button>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => onSaveNote(markdown)}
+          >
+            Save as evidence note
+          </button>
+          <button
+            className="button-primary"
+            type="button"
+            onClick={() =>
+              downloadMarkdown(
+                markdown,
+                safeMarkdownFilename(`comparison-${report.title}`),
+              )
+            }
+          >
+            Export Markdown
+          </button>
+        </div>
+      </div>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[700px] text-left text-sm">
+          <caption className="sr-only">Original and retest comparison</caption>
+          <thead className="text-xs uppercase text-slate-500">
+            <tr>
+              <th className="p-2">Area</th>
+              <th className="p-2">Original</th>
+              <th className="p-2">Observed during retest</th>
+              <th className="p-2">Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr className="border-t border-slate-800" key={row.label}>
+                <th className="p-2 align-top font-medium text-slate-200">
+                  {row.label}
+                </th>
+                <td className="max-w-xs whitespace-pre-wrap p-2 text-slate-400">
+                  {row.original}
+                </td>
+                <td className="max-w-xs whitespace-pre-wrap p-2 text-slate-300">
+                  {row.current}
+                </td>
+                <td className="p-2">
+                  <span className="badge border-slate-700 bg-slate-800 text-slate-200">
+                    {row.state}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}

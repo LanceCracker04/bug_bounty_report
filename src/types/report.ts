@@ -1,4 +1,10 @@
-export const SEVERITIES = ["Informational", "Low", "Medium", "High", "Critical"] as const;
+export const SEVERITIES = [
+  "Informational",
+  "Low",
+  "Medium",
+  "High",
+  "Critical",
+] as const;
 export const REPORT_STATUSES = [
   "Draft",
   "Ready to Submit",
@@ -15,14 +21,51 @@ export type Severity = (typeof SEVERITIES)[number];
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 export type CvssMode = "calculated" | "manual";
 export type EvidenceType = "image" | "url" | "text";
-export const SUBMISSION_PLATFORMS = ["HackerOne", "Bugcrowd", "Intigriti", "YesWeHack", "Private Program", "Direct Email", "Other"] as const;
-export const SUBMISSION_OUTCOMES = ["Not Submitted", "Submitted", "Needs More Information", "Triaged", "Accepted", "Duplicate", "Informative", "Not Applicable", "Resolved", "Rejected"] as const;
+export const SUBMISSION_PLATFORMS = [
+  "HackerOne",
+  "Bugcrowd",
+  "Intigriti",
+  "YesWeHack",
+  "Private Program",
+  "Direct Email",
+  "Other",
+] as const;
+export const SUBMISSION_OUTCOMES = [
+  "Not Submitted",
+  "Submitted",
+  "Needs More Information",
+  "Triaged",
+  "Accepted",
+  "Duplicate",
+  "Informative",
+  "Not Applicable",
+  "Resolved",
+  "Rejected",
+] as const;
 export type SubmissionPlatform = (typeof SUBMISSION_PLATFORMS)[number];
 export type SubmissionOutcome = (typeof SUBMISSION_OUTCOMES)[number];
 export type QualityGrade = "Excellent" | "Good" | "Needs Work" | "Incomplete";
-export type QualityCategory = "Required Field" | "Clarity" | "Reproduction" | "Impact" | "Evidence" | "Remediation" | "CVSS" | "Formatting" | "Submission";
-export interface RedactionScanSummary { lastScannedAt?: string; unresolvedHighConfidenceCount: number; unresolvedMediumConfidenceCount: number; reviewedCount: number; }
-export interface SimilarityScanSummary { lastScannedAt?: string; candidateCount: number; highestSimilarity?: number; }
+export type QualityCategory =
+  | "Required Field"
+  | "Clarity"
+  | "Reproduction"
+  | "Impact"
+  | "Evidence"
+  | "Remediation"
+  | "CVSS"
+  | "Formatting"
+  | "Submission";
+export interface RedactionScanSummary {
+  lastScannedAt?: string;
+  unresolvedHighConfidenceCount: number;
+  unresolvedMediumConfidenceCount: number;
+  reviewedCount: number;
+}
+export interface SimilarityScanSummary {
+  lastScannedAt?: string;
+  candidateCount: number;
+  highestSimilarity?: number;
+}
 
 export interface CvssMetrics {
   attackVector: "N" | "A" | "L" | "P";
@@ -147,7 +190,29 @@ export interface Report {
   qualityResult?: ReportQualityResult;
   archivedAt?: string;
   lastReviewedAt?: string;
-  relatedReportIds?: string[]; ignoredSimilarityReportIds?: string[]; redactionScanSummary?: RedactionScanSummary; similarityScanSummary?: SimilarityScanSummary; lastAssistantReviewAt?: string; programProfileId?: string; linkedAssetIds?: string[]; testingSessionIds?: string[]; httpTranscriptIds?: string[]; lastScopeValidation?: { status: string; matchedRuleId?: string; normalizedTarget?: string; reasons: string[]; checkedAt: string }; scopeReviewConfirmedAt?: string; scopeOverrideReason?: string; expectedResponseAt?: string; followUpAt?: string; disclosureDeadlineAt?: string; embargoEndAt?: string; nextAction?: string;
+  relatedReportIds?: string[];
+  ignoredSimilarityReportIds?: string[];
+  redactionScanSummary?: RedactionScanSummary;
+  similarityScanSummary?: SimilarityScanSummary;
+  lastAssistantReviewAt?: string;
+  programProfileId?: string;
+  linkedAssetIds?: string[];
+  testingSessionIds?: string[];
+  httpTranscriptIds?: string[];
+  lastScopeValidation?: {
+    status: string;
+    matchedRuleId?: string;
+    normalizedTarget?: string;
+    reasons: string[];
+    checkedAt: string;
+  };
+  scopeReviewConfirmedAt?: string;
+  scopeOverrideReason?: string;
+  expectedResponseAt?: string;
+  followUpAt?: string;
+  disclosureDeadlineAt?: string;
+  embargoEndAt?: string;
+  nextAction?: string;
   lifecycleStatus?: import("./phase6").FindingLifecycleStatus;
   lifecycleEvents?: import("./phase6").FindingLifecycleEvent[];
   remediationOwnerLabel?: string;
@@ -159,10 +224,18 @@ export interface Report {
   findingFamilyId?: string;
   regressionDetectedAt?: string;
   isExampleReport?: boolean;
-  templateGuidance?: { sectionPrompts: import("./template").TemplateSectionPrompts; evidenceChecklist: string[]; questionsToAnswer: string[]; commonMistakes: string[] };
+  templateGuidance?: {
+    sectionPrompts: import("./template").TemplateSectionPrompts;
+    evidenceChecklist: string[];
+    questionsToAnswer: string[];
+    commonMistakes: string[];
+  };
 }
 
-export type ReportDraft = Omit<Report, "id" | "createdAt" | "updatedAt" | "reportReference" | "lastAutosavedAt">;
+export type ReportDraft = Omit<
+  Report,
+  "id" | "createdAt" | "updatedAt" | "reportReference" | "lastAutosavedAt"
+>;
 
 export const DEFAULT_CVSS_METRICS: CvssMetrics = {
   attackVector: "N",

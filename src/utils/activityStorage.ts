@@ -11,14 +11,44 @@ export function loadActivities(): ActivityEntry[] {
     return data.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const entry = item as Partial<ActivityEntry>;
-      if (typeof entry.reportId !== "string" || typeof entry.action !== "string" || typeof entry.description !== "string") return [];
-      return [{ id: typeof entry.id === "string" ? entry.id : generateReportId(), reportId: entry.reportId, timestamp: typeof entry.timestamp === "string" ? entry.timestamp : new Date().toISOString(), action: entry.action as ActivityAction, description: entry.description }];
+      if (
+        typeof entry.reportId !== "string" ||
+        typeof entry.action !== "string" ||
+        typeof entry.description !== "string"
+      )
+        return [];
+      return [
+        {
+          id: typeof entry.id === "string" ? entry.id : generateReportId(),
+          reportId: entry.reportId,
+          timestamp:
+            typeof entry.timestamp === "string"
+              ? entry.timestamp
+              : new Date().toISOString(),
+          action: entry.action as ActivityAction,
+          description: entry.description,
+        },
+      ];
     });
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-export function saveActivities(entries: ActivityEntry[]): void { window.localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(entries)); }
+export function saveActivities(entries: ActivityEntry[]): void {
+  window.localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(entries));
+}
 
-export function createActivity(reportId: string, action: ActivityAction, description: string): ActivityEntry {
-  return { id: generateReportId(), reportId, action, description, timestamp: new Date().toISOString() };
+export function createActivity(
+  reportId: string,
+  action: ActivityAction,
+  description: string,
+): ActivityEntry {
+  return {
+    id: generateReportId(),
+    reportId,
+    action,
+    description,
+    timestamp: new Date().toISOString(),
+  };
 }

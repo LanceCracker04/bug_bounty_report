@@ -3,6 +3,68 @@ import { ACTIVITY_ACTIONS, type ActivityEntry } from "../../types/activity";
 
 export function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
   const [action, setAction] = useState<"all" | ActivityEntry["action"]>("all");
-  const visible = useMemo(() => entries.filter((entry) => action === "all" || entry.action === action).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), [action, entries]);
-  return <section className="editor-section" id="activity"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><span className="section-index">09</span><h2 className="text-base font-semibold text-slate-200">Activity Timeline</h2></div><p className="mt-2 text-sm text-slate-500">Meaningful local workspace events are retained with this report.</p></div><label className="field-group w-52"><span>Filter action</span><select className="input-field" value={action} onChange={(event) => setAction(event.target.value as "all" | ActivityEntry["action"])}><option value="all">All activity</option>{ACTIVITY_ACTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label></div><ol className="mt-5 space-y-3 border-l border-slate-700 pl-5">{visible.length ? visible.map((entry) => <li className="relative" key={entry.id}><span className="absolute -left-[1.8rem] top-1 h-3 w-3 rounded-full border border-cyan-700 bg-[#101318]" /><p className="text-sm font-medium text-slate-200">{entry.action}</p><p className="mt-1 text-sm text-slate-400">{entry.description}</p><time className="mt-1 block text-xs text-slate-600">{new Date(entry.timestamp).toLocaleString()}</time></li>) : <li className="text-sm text-slate-500">No activity recorded for this report yet.</li>}</ol></section>;
+  const visible = useMemo(
+    () =>
+      entries
+        .filter((entry) => action === "all" || entry.action === action)
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
+    [action, entries],
+  );
+  return (
+    <section className="editor-section" id="activity">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="section-index">09</span>
+            <h2 className="text-base font-semibold text-slate-200">
+              Activity Timeline
+            </h2>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">
+            Meaningful local workspace events are retained with this report.
+          </p>
+        </div>
+        <label className="field-group w-52">
+          <span>Filter action</span>
+          <select
+            className="input-field"
+            value={action}
+            onChange={(event) =>
+              setAction(event.target.value as "all" | ActivityEntry["action"])
+            }
+          >
+            <option value="all">All activity</option>
+            {ACTIVITY_ACTIONS.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <ol className="mt-5 space-y-3 border-l border-slate-700 pl-5">
+        {visible.length ? (
+          visible.map((entry) => (
+            <li className="relative" key={entry.id}>
+              <span className="absolute -left-[1.8rem] top-1 h-3 w-3 rounded-full border border-cyan-700 bg-[#101318]" />
+              <p className="text-sm font-medium text-slate-200">
+                {entry.action}
+              </p>
+              <p className="mt-1 text-sm text-slate-400">{entry.description}</p>
+              <time className="mt-1 block text-xs text-slate-600">
+                {new Date(entry.timestamp).toLocaleString()}
+              </time>
+            </li>
+          ))
+        ) : (
+          <li className="text-sm text-slate-500">
+            No activity recorded for this report yet.
+          </li>
+        )}
+      </ol>
+    </section>
+  );
 }

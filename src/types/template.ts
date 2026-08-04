@@ -1,4 +1,9 @@
-import type { ReferenceItem, ReproductionStep, Severity, TimelineItem } from "./report";
+import type {
+  ReferenceItem,
+  ReproductionStep,
+  Severity,
+  TimelineItem,
+} from "./report";
 
 export type TemplateDifficulty = "Beginner" | "Intermediate" | "Advanced";
 export interface TemplateExample {

@@ -1,15 +1,35 @@
 import type { Report } from "./report";
 
 export const FINDING_LIFECYCLE_STATUSES = [
-  "Draft", "Ready to Submit", "Submitted", "Needs More Information", "Triaged", "Accepted",
-  "Remediation in Progress", "Ready for Retest", "Retesting", "Remediated", "Partially Remediated",
-  "Not Remediated", "Risk Accepted", "Duplicate", "Informative", "Rejected", "Closed",
+  "Draft",
+  "Ready to Submit",
+  "Submitted",
+  "Needs More Information",
+  "Triaged",
+  "Accepted",
+  "Remediation in Progress",
+  "Ready for Retest",
+  "Retesting",
+  "Remediated",
+  "Partially Remediated",
+  "Not Remediated",
+  "Risk Accepted",
+  "Duplicate",
+  "Informative",
+  "Rejected",
+  "Closed",
 ] as const;
-export type FindingLifecycleStatus = (typeof FINDING_LIFECYCLE_STATUSES)[number];
+export type FindingLifecycleStatus =
+  (typeof FINDING_LIFECYCLE_STATUSES)[number];
 
 export const VERIFICATION_OUTCOMES = [
-  "Not Tested", "Unable to Verify", "Still Reproducible", "Partially Fixed", "No Longer Reproducible",
-  "Different Behavior Observed", "Regression Detected",
+  "Not Tested",
+  "Unable to Verify",
+  "Still Reproducible",
+  "Partially Fixed",
+  "No Longer Reproducible",
+  "Different Behavior Observed",
+  "Regression Detected",
 ] as const;
 export type VerificationOutcome = (typeof VERIFICATION_OUTCOMES)[number];
 
@@ -74,8 +94,17 @@ export interface FindingFamily {
 }
 
 export const ROOT_CAUSE_CATEGORIES = [
-  "Authorization", "Authentication", "Input Handling", "Output Encoding", "Session Management", "Configuration",
-  "Business Logic", "Data Exposure", "Infrastructure", "Process", "Other",
+  "Authorization",
+  "Authentication",
+  "Input Handling",
+  "Output Encoding",
+  "Session Management",
+  "Configuration",
+  "Business Logic",
+  "Data Exposure",
+  "Infrastructure",
+  "Process",
+  "Other",
 ] as const;
 export type RootCauseCategory = (typeof ROOT_CAUSE_CATEGORIES)[number];
 
@@ -92,7 +121,13 @@ export interface RootCauseEntry {
 }
 
 export type CommunicationDirection = "Incoming" | "Outgoing" | "Internal Note";
-export type CommunicationChannel = "Platform Comment" | "Email" | "Video Call" | "Voice Call" | "Meeting" | "Other";
+export type CommunicationChannel =
+  | "Platform Comment"
+  | "Email"
+  | "Video Call"
+  | "Voice Call"
+  | "Meeting"
+  | "Other";
 export interface CommunicationEntry {
   id: string;
   reportId?: string;
@@ -111,8 +146,15 @@ export interface CommunicationEntry {
   updatedAt: string;
 }
 
-export const INFORMATION_REQUEST_STATUSES = ["Open", "Drafting Response", "Ready to Respond", "Responded", "Closed"] as const;
-export type InformationRequestStatus = (typeof INFORMATION_REQUEST_STATUSES)[number];
+export const INFORMATION_REQUEST_STATUSES = [
+  "Open",
+  "Drafting Response",
+  "Ready to Respond",
+  "Responded",
+  "Closed",
+] as const;
+export type InformationRequestStatus =
+  (typeof INFORMATION_REQUEST_STATUSES)[number];
 export interface InformationRequest {
   id: string;
   reportId: string;
@@ -130,7 +172,13 @@ export interface InformationRequest {
 }
 
 export type SanitizationMode = "Minimal" | "Standard" | "Strict" | "Custom";
-export interface SanitizationReplacement { id: string; source: string; replacement: string; enabled: boolean; category: string; }
+export interface SanitizationReplacement {
+  id: string;
+  source: string;
+  replacement: string;
+  enabled: boolean;
+  category: string;
+}
 export interface SanitizationProfile {
   id: string;
   name: string;
@@ -177,7 +225,11 @@ export interface DiagnosticFinding {
   repairable?: boolean;
   details?: string;
 }
-export interface HealthCheckResult { checkedAt: string; findings: DiagnosticFinding[]; repairableCount: number; }
+export interface HealthCheckResult {
+  checkedAt: string;
+  findings: DiagnosticFinding[];
+  repairableCount: number;
+}
 
 export interface SanitizedReportCopy {
   report: Report;

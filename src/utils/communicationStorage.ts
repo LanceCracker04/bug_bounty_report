@@ -1,1 +1,6 @@
-export { loadCommunications, saveCommunications, loadInformationRequests, saveInformationRequests } from "./phase6Storage";
+export {
+  loadCommunications,
+  saveCommunications,
+  loadInformationRequests,
+  saveInformationRequests,
+} from "./phase6Storage";

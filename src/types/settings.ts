@@ -25,13 +25,51 @@ export interface AppSettings {
 export type InstalledModelName = string;
 
 export interface AiSettings {
-  enabled: boolean; baseUrl: string; selectedModel: InstalledModelName; requestTimeoutMs: number; maxContextCharacters: number;
-  streamResponses: boolean; includeReportMetadata: boolean; includeEvidenceDescriptions: boolean; includeKnowledgeContext: boolean;
-  persistConversations: boolean; tone: "Professional" | "Concise" | "Technical" | "Platform Submission" | "Direct Email";
-  detail: "Brief" | "Balanced" | "Detailed"; neutralLanguage: boolean; preserveTechnicalTerms: boolean; avoidExaggeration: boolean; englishVariant: "US" | "UK"; customInstruction: string; lastConnectionAt?: string; lastGenerationAt?: string;
+  enabled: boolean;
+  baseUrl: string;
+  selectedModel: InstalledModelName;
+  requestTimeoutMs: number;
+  maxContextCharacters: number;
+  streamResponses: boolean;
+  includeReportMetadata: boolean;
+  includeEvidenceDescriptions: boolean;
+  includeKnowledgeContext: boolean;
+  persistConversations: boolean;
+  tone:
+    | "Professional"
+    | "Concise"
+    | "Technical"
+    | "Platform Submission"
+    | "Direct Email";
+  detail: "Brief" | "Balanced" | "Detailed";
+  neutralLanguage: boolean;
+  preserveTechnicalTerms: boolean;
+  avoidExaggeration: boolean;
+  englishVariant: "US" | "UK";
+  customInstruction: string;
+  lastConnectionAt?: string;
+  lastGenerationAt?: string;
 }
 
-export const DEFAULT_AI_SETTINGS: AiSettings = { enabled: false, baseUrl: "http://localhost:11434", selectedModel: "", requestTimeoutMs: 60000, maxContextCharacters: 24000, streamResponses: true, includeReportMetadata: true, includeEvidenceDescriptions: false, includeKnowledgeContext: false, persistConversations: false, tone: "Professional", detail: "Balanced", neutralLanguage: true, preserveTechnicalTerms: true, avoidExaggeration: true, englishVariant: "US", customInstruction: "" };
+export const DEFAULT_AI_SETTINGS: AiSettings = {
+  enabled: false,
+  baseUrl: "http://localhost:11434",
+  selectedModel: "",
+  requestTimeoutMs: 60000,
+  maxContextCharacters: 24000,
+  streamResponses: true,
+  includeReportMetadata: true,
+  includeEvidenceDescriptions: false,
+  includeKnowledgeContext: false,
+  persistConversations: false,
+  tone: "Professional",
+  detail: "Balanced",
+  neutralLanguage: true,
+  preserveTechnicalTerms: true,
+  avoidExaggeration: true,
+  englishVariant: "US",
+  customInstruction: "",
+};
 
 export const DEFAULT_SETTINGS: AppSettings = {
   profile: {

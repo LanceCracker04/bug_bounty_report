@@ -1,7 +1,9 @@
 import type { SanitizedPdfData } from "../types/pdf";
 
 export function sanitizedPdfFilename(data: SanitizedPdfData): string {
-  const reference = data.reportReference.replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "") || "report";
+  const reference =
+    data.reportReference.replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "") ||
+    "report";
   return `${reference}-sanitized-security-report.pdf`;
 }
 

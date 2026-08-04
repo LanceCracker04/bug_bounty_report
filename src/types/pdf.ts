@@ -11,7 +11,8 @@ export interface SanitizedPdfEvidence {
   description?: string;
   url?: string;
   imageDataUrl?: string;
-  imageLabel?: "Redacted Evidence" | "Annotated Evidence" | "Sanitized Evidence";
+  imageLabel?:
+    "Redacted Evidence" | "Annotated Evidence" | "Sanitized Evidence";
 }
 
 export interface SanitizedPdfReference {

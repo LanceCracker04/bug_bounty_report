@@ -1,9 +1,24 @@
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { SeverityBadge, StatusBadge } from "../components/ui/Badges";
-import { SUBMISSION_OUTCOMES, SUBMISSION_PLATFORMS, type Report, type ReportStatus, type SubmissionDetails, type SubmissionOutcome, type SubmissionPlatform } from "../types/report";
-import { createSubmissionContent, downloadPlainText, type SubmissionPreset } from "../utils/submissionFormat";
-import { checklistProgress, synchronizeChecklist } from "../utils/reportQuality";
+import {
+  SUBMISSION_OUTCOMES,
+  SUBMISSION_PLATFORMS,
+  type Report,
+  type ReportStatus,
+  type SubmissionDetails,
+  type SubmissionOutcome,
+  type SubmissionPlatform,
+} from "../types/report";
+import {
+  createSubmissionContent,
+  downloadPlainText,
+  type SubmissionPreset,
+} from "../utils/submissionFormat";
+import {
+  checklistProgress,
+  synchronizeChecklist,
+} from "../utils/reportQuality";
 import { safeMarkdownFilename } from "../utils/markdownExport";
 import { generateReportId } from "../utils/reportHelpers";
 
@@ -13,26 +28,590 @@ interface SubmissionWorkflowPageProps {
   onOpenReport: () => void;
   onOpenPreview: () => void;
   onRunQuality: () => void;
-  onUpdate: (report: Report, action: "Edited" | "Submitted" | "Status Changed" | "Exported", description: string, snapshot?: "Before Submission" | "Status Change") => void;
+  onUpdate: (
+    report: Report,
+    action: "Edited" | "Submitted" | "Status Changed" | "Exported",
+    description: string,
+    snapshot?: "Before Submission" | "Status Change",
+  ) => void;
   onNotify: (type: "success" | "error" | "warning", message: string) => void;
 }
 
-function validUrl(value: string): boolean { try { const url = new URL(value); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; } }
-function outcomeStatus(outcome: SubmissionOutcome): ReportStatus { return ({ Submitted: "Submitted", Triaged: "Triaged", Accepted: "Accepted", Duplicate: "Duplicate", Informative: "Informative", Resolved: "Resolved", Rejected: "Rejected", "Needs More Information": "Submitted", "Not Applicable": "Informative", "Not Submitted": "Draft" } as Record<SubmissionOutcome, ReportStatus>)[outcome]; }
+function validUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+function outcomeStatus(outcome: SubmissionOutcome): ReportStatus {
+  return (
+    {
+      Submitted: "Submitted",
+      Triaged: "Triaged",
+      Accepted: "Accepted",
+      Duplicate: "Duplicate",
+      Informative: "Informative",
+      Resolved: "Resolved",
+      Rejected: "Rejected",
+      "Needs More Information": "Submitted",
+      "Not Applicable": "Informative",
+      "Not Submitted": "Draft",
+    } as Record<SubmissionOutcome, ReportStatus>
+  )[outcome];
+}
 
-export function SubmissionWorkflowPage({ report, onBack, onOpenReport, onOpenPreview, onRunQuality, onUpdate, onNotify }: SubmissionWorkflowPageProps) {
+export function SubmissionWorkflowPage({
+  report,
+  onBack,
+  onOpenReport,
+  onOpenPreview,
+  onRunQuality,
+  onUpdate,
+  onNotify,
+}: SubmissionWorkflowPageProps) {
   const [preset, setPreset] = useState<SubmissionPreset>("Generic");
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
-  const [details, setDetails] = useState<SubmissionDetails>({ ...report.submissionDetails, platform: report.submissionDetails.platform || "Other", programName: report.submissionDetails.programName || report.programName, outcome: report.submissionDetails.outcome || "Not Submitted", submittedAt: report.submissionDetails.submittedAt || new Date().toISOString().slice(0, 10) });
-  const checklist = synchronizeChecklist(report); const progress = checklistProgress(checklist); const content = useMemo(() => createSubmissionContent(report, preset), [preset, report]);
-  const updateChecklist = (id: string, completed: boolean) => onUpdate({ ...report, submissionChecklist: checklist.map((item) => item.id === id ? { ...item, completed } : item), updatedAt: new Date().toISOString() }, "Edited", `Updated submission checklist item.`);
-  const addCustom = () => onUpdate({ ...report, submissionChecklist: [...checklist, { id: generateReportId(), label: "Custom submission check", completed: false, required: false, source: "custom" }], updatedAt: new Date().toISOString() }, "Edited", "Added custom submission checklist item.");
-  const updateCustom = (id: string, label: string) => onUpdate({ ...report, submissionChecklist: checklist.map((item) => item.id === id ? { ...item, label } : item), updatedAt: new Date().toISOString() }, "Edited", "Updated custom submission checklist item.");
-  const removeCustom = (id: string) => onUpdate({ ...report, submissionChecklist: checklist.filter((item) => item.id !== id), updatedAt: new Date().toISOString() }, "Edited", "Removed custom submission checklist item.");
-  const copy = async (value: string, name: string) => { try { await navigator.clipboard.writeText(value); onNotify("success", `${name} copied to the clipboard.`); } catch { onNotify("error", "Clipboard access was unavailable."); } };
-  const validateSubmission = (): boolean => { if (!details.submittedAt) { onNotify("warning", "Submission date is required."); return false; } if (details.submissionUrl && !validUrl(details.submissionUrl)) { onNotify("warning", "Submission URL must be a valid http(s) address."); return false; } setConfirmSubmit(true); return true; };
-  const markSubmitted = () => { const next = { ...report, status: "Submitted" as const, submissionDetails: { ...details, outcome: "Submitted" as const }, updatedAt: new Date().toISOString() }; onUpdate(next, "Submitted", `Marked submitted to ${details.platform}.`, "Before Submission"); setConfirmSubmit(false); setShowSubmitForm(false); onNotify("success", "Report marked as submitted. No external submission was sent."); };
-  const updateOutcome = (outcome: SubmissionOutcome) => { const status = outcomeStatus(outcome); onUpdate({ ...report, status, submissionDetails: { ...report.submissionDetails, outcome, lastResponseAt: new Date().toISOString(), programName: report.submissionDetails.programName || report.programName }, updatedAt: new Date().toISOString() }, "Status Changed", `Submission outcome updated to ${outcome}.`, "Status Change"); onNotify("success", "Submission outcome updated."); };
-  return <div className="mx-auto max-w-6xl space-y-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><button className="button-link" type="button" onClick={onBack}>← Back to workspace</button><h1 className="mt-2 text-xl font-semibold text-slate-100">Prepare Submission</h1><p className="mt-1 text-sm text-slate-500">{report.reportReference} · {report.title}</p></div><div className="flex gap-2"><SeverityBadge severity={report.severity} /><StatusBadge status={report.status} /></div></div><ol className="grid gap-2 md:grid-cols-6">{["Review Report", "Run Quality Check", "Complete Checklist", "Prepare Content", "Mark Submitted", "Track Outcome"].map((stage, index) => <li className={`rounded border px-3 py-2 text-xs ${index < 4 || report.status === "Submitted" ? "border-cyan-900 bg-cyan-950/30 text-cyan-200" : "border-slate-800 bg-[#101318] text-slate-500"}`} key={stage}><span className="mr-2 font-mono">0{index + 1}</span>{stage}</li>)}</ol><section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">1. Review Report</h2><p className="mt-1 text-sm text-slate-500">Confirm the report is ready for an authorized program workflow.</p></div><div className="flex gap-2"><button className="button-secondary" type="button" onClick={onOpenReport}>Open Editor</button><button className="button-secondary" type="button" onClick={onOpenPreview}>Open Professional Preview</button></div></div></section><section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">2. Run Quality Check</h2><p className="mt-1 text-sm text-slate-500">Current result: {report.qualityResult ? `${report.qualityResult.score}/100 · ${report.qualityResult.grade}` : "Not checked"}.</p></div><button className="button-primary" type="button" onClick={onRunQuality}>{report.qualityResult ? "Re-run Check" : "Run Quality Check"}</button></div></section><section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">3. Complete Checklist</h2><p className="mt-1 text-sm text-slate-500">{progress.completed}/{progress.total} complete · {progress.blocking} required item{progress.blocking === 1 ? "" : "s"} remaining.</p></div><button className="button-secondary" type="button" onClick={addCustom}>+ Add Custom Item</button></div><div className="mt-4 space-y-2">{checklist.map((item) => <div className="flex flex-wrap items-center gap-3 rounded border border-slate-800 bg-[#0d1014] px-3 py-2" key={item.id}><input className="h-4 w-4 accent-cyan-700" id={`check-${item.id}`} type="checkbox" checked={item.completed} disabled={item.source === "system" && !["authorized-scope", "sensitive-info", "preview-reviewed"].includes(item.id)} onChange={(event) => updateChecklist(item.id, event.target.checked)} /><label className="flex-1 text-sm text-slate-300" htmlFor={`check-${item.id}`}>{item.label}</label><span className="text-xs text-slate-500">{item.required ? "Required" : "Optional"} · {item.source === "system" ? "System" : "Custom"}</span>{item.source === "custom" && <><input className="input-field w-44 py-1 text-xs" value={item.label} onChange={(event) => updateCustom(item.id, event.target.value)} aria-label="Custom checklist label" /><button className="table-action-danger" type="button" onClick={() => removeCustom(item.id)}>Delete</button></>}</div>)}</div></section><section className="editor-section"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">4. Prepare Submission Content</h2><p className="mt-1 text-sm text-slate-500">Formatting presets are local writing aids and may not mirror every platform form.</p></div><label className="field-group w-52"><span>Format preset</span><select className="input-field" value={preset} onChange={(event) => setPreset(event.target.value as SubmissionPreset)}>{(["Generic", "HackerOne", "Bugcrowd", "Intigriti", "YesWeHack", "Direct Email"] as SubmissionPreset[]).map((item) => <option key={item}>{item}</option>)}</select></label></div><textarea className="input-field mt-4 min-h-100 w-full resize-y font-mono text-xs" value={content} readOnly aria-label="Generated submission content" /><div className="mt-3 flex flex-wrap gap-2"><button className="button-primary" type="button" onClick={() => void copy(content, "Full submission")}>Copy Full Submission</button><button className="button-secondary" type="button" onClick={() => downloadPlainText(content, safeMarkdownFilename(report.title).replace(/\.md$/, ".txt"))}>Download Plain Text</button><button className="button-secondary" type="button" onClick={() => downloadPlainText(content, safeMarkdownFilename(report.title))}>Download as Markdown</button><button className="button-secondary" type="button" onClick={() => void copy(report.summary, "Summary")}>Copy Summary</button><button className="button-secondary" type="button" onClick={() => void copy(report.impact, "Impact")}>Copy Impact</button></div></section><section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">5. Mark as Submitted</h2><p className="mt-1 text-sm text-slate-500">This only records a local submission event; it never sends data to a platform.</p></div><button className="button-primary" type="button" onClick={() => setShowSubmitForm((value) => !value)}>Mark as Submitted</button></div>{showSubmitForm && <div className="mt-4 grid gap-4 rounded border border-slate-700 bg-[#0d1014] p-4 md:grid-cols-2"><label className="field-group"><span>Submission Platform</span><select className="input-field" value={details.platform} onChange={(event) => setDetails({ ...details, platform: event.target.value as SubmissionPlatform })}>{SUBMISSION_PLATFORMS.map((item) => <option key={item}>{item}</option>)}</select></label><label className="field-group"><span>Program Name</span><input className="input-field" value={details.programName ?? ""} onChange={(event) => setDetails({ ...details, programName: event.target.value })} /></label><label className="field-group"><span>Submission ID (optional)</span><input className="input-field" value={details.submissionId ?? ""} onChange={(event) => setDetails({ ...details, submissionId: event.target.value })} /></label><label className="field-group"><span>Submission URL (optional)</span><input className="input-field" type="url" value={details.submissionUrl ?? ""} onChange={(event) => setDetails({ ...details, submissionUrl: event.target.value })} placeholder="https://…" /></label><label className="field-group"><span>Submission Date *</span><input className="input-field" type="date" value={details.submittedAt ?? ""} onChange={(event) => setDetails({ ...details, submittedAt: event.target.value })} required /></label><label className="field-group"><span>Analyst or Triager (optional)</span><input className="input-field" value={details.analystName ?? ""} onChange={(event) => setDetails({ ...details, analystName: event.target.value })} /></label><label className="field-group md:col-span-2"><span>Notes (optional)</span><textarea className="input-field min-h-24 resize-y" value={details.notes ?? ""} onChange={(event) => setDetails({ ...details, notes: event.target.value })} /></label><div className="md:col-span-2 flex justify-end"><button className="button-primary" type="button" onClick={validateSubmission}>Confirm Submission Details</button></div></div>}</section><section className="editor-section"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-200">6. Track Outcome</h2><p className="mt-1 text-sm text-slate-500">Current outcome: {report.submissionDetails.outcome}</p></div><label className="field-group w-60"><span>Outcome</span><select className="input-field" value={report.submissionDetails.outcome} onChange={(event) => updateOutcome(event.target.value as SubmissionOutcome)}>{SUBMISSION_OUTCOMES.filter((item) => item !== "Not Submitted").map((item) => <option key={item}>{item}</option>)}</select></label></div></section><ConfirmDialog isOpen={confirmSubmit} title={progress.blocking ? "Required checklist items remain" : "Mark report as submitted?"} description={progress.blocking ? `${progress.blocking} required checklist item(s) remain incomplete. You can still record the submission, but review the report carefully.` : "This records submission details locally and does not send anything externally."} confirmLabel="Mark Submitted" confirmTone="primary" onConfirm={markSubmitted} onCancel={() => setConfirmSubmit(false)} /></div>;
+  const [details, setDetails] = useState<SubmissionDetails>({
+    ...report.submissionDetails,
+    platform: report.submissionDetails.platform || "Other",
+    programName: report.submissionDetails.programName || report.programName,
+    outcome: report.submissionDetails.outcome || "Not Submitted",
+    submittedAt:
+      report.submissionDetails.submittedAt ||
+      new Date().toISOString().slice(0, 10),
+  });
+  const checklist = synchronizeChecklist(report);
+  const progress = checklistProgress(checklist);
+  const content = useMemo(
+    () => createSubmissionContent(report, preset),
+    [preset, report],
+  );
+  const updateChecklist = (id: string, completed: boolean) =>
+    onUpdate(
+      {
+        ...report,
+        submissionChecklist: checklist.map((item) =>
+          item.id === id ? { ...item, completed } : item,
+        ),
+        updatedAt: new Date().toISOString(),
+      },
+      "Edited",
+      `Updated submission checklist item.`,
+    );
+  const addCustom = () =>
+    onUpdate(
+      {
+        ...report,
+        submissionChecklist: [
+          ...checklist,
+          {
+            id: generateReportId(),
+            label: "Custom submission check",
+            completed: false,
+            required: false,
+            source: "custom",
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      },
+      "Edited",
+      "Added custom submission checklist item.",
+    );
+  const updateCustom = (id: string, label: string) =>
+    onUpdate(
+      {
+        ...report,
+        submissionChecklist: checklist.map((item) =>
+          item.id === id ? { ...item, label } : item,
+        ),
+        updatedAt: new Date().toISOString(),
+      },
+      "Edited",
+      "Updated custom submission checklist item.",
+    );
+  const removeCustom = (id: string) =>
+    onUpdate(
+      {
+        ...report,
+        submissionChecklist: checklist.filter((item) => item.id !== id),
+        updatedAt: new Date().toISOString(),
+      },
+      "Edited",
+      "Removed custom submission checklist item.",
+    );
+  const copy = async (value: string, name: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      onNotify("success", `${name} copied to the clipboard.`);
+    } catch {
+      onNotify("error", "Clipboard access was unavailable.");
+    }
+  };
+  const validateSubmission = (): boolean => {
+    if (!details.submittedAt) {
+      onNotify("warning", "Submission date is required.");
+      return false;
+    }
+    if (details.submissionUrl && !validUrl(details.submissionUrl)) {
+      onNotify("warning", "Submission URL must be a valid http(s) address.");
+      return false;
+    }
+    setConfirmSubmit(true);
+    return true;
+  };
+  const markSubmitted = () => {
+    const next = {
+      ...report,
+      status: "Submitted" as const,
+      submissionDetails: { ...details, outcome: "Submitted" as const },
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdate(
+      next,
+      "Submitted",
+      `Marked submitted to ${details.platform}.`,
+      "Before Submission",
+    );
+    setConfirmSubmit(false);
+    setShowSubmitForm(false);
+    onNotify(
+      "success",
+      "Report marked as submitted. No external submission was sent.",
+    );
+  };
+  const updateOutcome = (outcome: SubmissionOutcome) => {
+    const status = outcomeStatus(outcome);
+    onUpdate(
+      {
+        ...report,
+        status,
+        submissionDetails: {
+          ...report.submissionDetails,
+          outcome,
+          lastResponseAt: new Date().toISOString(),
+          programName:
+            report.submissionDetails.programName || report.programName,
+        },
+        updatedAt: new Date().toISOString(),
+      },
+      "Status Changed",
+      `Submission outcome updated to ${outcome}.`,
+      "Status Change",
+    );
+    onNotify("success", "Submission outcome updated.");
+  };
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <button className="button-link" type="button" onClick={onBack}>
+            ← Back to workspace
+          </button>
+          <h1 className="mt-2 text-xl font-semibold text-slate-100">
+            Prepare Submission
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {report.reportReference} · {report.title}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <SeverityBadge severity={report.severity} />
+          <StatusBadge status={report.status} />
+        </div>
+      </div>
+      <ol className="grid gap-2 md:grid-cols-6">
+        {[
+          "Review Report",
+          "Run Quality Check",
+          "Complete Checklist",
+          "Prepare Content",
+          "Mark Submitted",
+          "Track Outcome",
+        ].map((stage, index) => (
+          <li
+            className={`rounded border px-3 py-2 text-xs ${index < 4 || report.status === "Submitted" ? "border-cyan-900 bg-cyan-950/30 text-cyan-200" : "border-slate-800 bg-[#101318] text-slate-500"}`}
+            key={stage}
+          >
+            <span className="mr-2 font-mono">0{index + 1}</span>
+            {stage}
+          </li>
+        ))}
+      </ol>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              1. Review Report
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Confirm the report is ready for an authorized program workflow.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={onOpenReport}
+            >
+              Open Editor
+            </button>
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={onOpenPreview}
+            >
+              Open Professional Preview
+            </button>
+          </div>
+        </div>
+      </section>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              2. Run Quality Check
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Current result:{" "}
+              {report.qualityResult
+                ? `${report.qualityResult.score}/100 · ${report.qualityResult.grade}`
+                : "Not checked"}
+              .
+            </p>
+          </div>
+          <button
+            className="button-primary"
+            type="button"
+            onClick={onRunQuality}
+          >
+            {report.qualityResult ? "Re-run Check" : "Run Quality Check"}
+          </button>
+        </div>
+      </section>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              3. Complete Checklist
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {progress.completed}/{progress.total} complete ·{" "}
+              {progress.blocking} required item
+              {progress.blocking === 1 ? "" : "s"} remaining.
+            </p>
+          </div>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={addCustom}
+          >
+            + Add Custom Item
+          </button>
+        </div>
+        <div className="mt-4 space-y-2">
+          {checklist.map((item) => (
+            <div
+              className="flex flex-wrap items-center gap-3 rounded border border-slate-800 bg-[#0d1014] px-3 py-2"
+              key={item.id}
+            >
+              <input
+                className="h-4 w-4 accent-cyan-700"
+                id={`check-${item.id}`}
+                type="checkbox"
+                checked={item.completed}
+                disabled={
+                  item.source === "system" &&
+                  ![
+                    "authorized-scope",
+                    "sensitive-info",
+                    "preview-reviewed",
+                  ].includes(item.id)
+                }
+                onChange={(event) =>
+                  updateChecklist(item.id, event.target.checked)
+                }
+              />
+              <label
+                className="flex-1 text-sm text-slate-300"
+                htmlFor={`check-${item.id}`}
+              >
+                {item.label}
+              </label>
+              <span className="text-xs text-slate-500">
+                {item.required ? "Required" : "Optional"} ·{" "}
+                {item.source === "system" ? "System" : "Custom"}
+              </span>
+              {item.source === "custom" && (
+                <>
+                  <input
+                    className="input-field w-44 py-1 text-xs"
+                    value={item.label}
+                    onChange={(event) =>
+                      updateCustom(item.id, event.target.value)
+                    }
+                    aria-label="Custom checklist label"
+                  />
+                  <button
+                    className="table-action-danger"
+                    type="button"
+                    onClick={() => removeCustom(item.id)}
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              4. Prepare Submission Content
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Formatting presets are local writing aids and may not mirror every
+              platform form.
+            </p>
+          </div>
+          <label className="field-group w-52">
+            <span>Format preset</span>
+            <select
+              className="input-field"
+              value={preset}
+              onChange={(event) =>
+                setPreset(event.target.value as SubmissionPreset)
+              }
+            >
+              {(
+                [
+                  "Generic",
+                  "HackerOne",
+                  "Bugcrowd",
+                  "Intigriti",
+                  "YesWeHack",
+                  "Direct Email",
+                ] as SubmissionPreset[]
+              ).map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <textarea
+          className="input-field mt-4 min-h-100 w-full resize-y font-mono text-xs"
+          value={content}
+          readOnly
+          aria-label="Generated submission content"
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            className="button-primary"
+            type="button"
+            onClick={() => void copy(content, "Full submission")}
+          >
+            Copy Full Submission
+          </button>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() =>
+              downloadPlainText(
+                content,
+                safeMarkdownFilename(report.title).replace(/\.md$/, ".txt"),
+              )
+            }
+          >
+            Download Plain Text
+          </button>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() =>
+              downloadPlainText(content, safeMarkdownFilename(report.title))
+            }
+          >
+            Download as Markdown
+          </button>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => void copy(report.summary, "Summary")}
+          >
+            Copy Summary
+          </button>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => void copy(report.impact, "Impact")}
+          >
+            Copy Impact
+          </button>
+        </div>
+      </section>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              5. Mark as Submitted
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              This only records a local submission event; it never sends data to
+              a platform.
+            </p>
+          </div>
+          <button
+            className="button-primary"
+            type="button"
+            onClick={() => setShowSubmitForm((value) => !value)}
+          >
+            Mark as Submitted
+          </button>
+        </div>
+        {showSubmitForm && (
+          <div className="mt-4 grid gap-4 rounded border border-slate-700 bg-[#0d1014] p-4 md:grid-cols-2">
+            <label className="field-group">
+              <span>Submission Platform</span>
+              <select
+                className="input-field"
+                value={details.platform}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    platform: event.target.value as SubmissionPlatform,
+                  })
+                }
+              >
+                {SUBMISSION_PLATFORMS.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Program Name</span>
+              <input
+                className="input-field"
+                value={details.programName ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, programName: event.target.value })
+                }
+              />
+            </label>
+            <label className="field-group">
+              <span>Submission ID (optional)</span>
+              <input
+                className="input-field"
+                value={details.submissionId ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, submissionId: event.target.value })
+                }
+              />
+            </label>
+            <label className="field-group">
+              <span>Submission URL (optional)</span>
+              <input
+                className="input-field"
+                type="url"
+                value={details.submissionUrl ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, submissionUrl: event.target.value })
+                }
+                placeholder="https://…"
+              />
+            </label>
+            <label className="field-group">
+              <span>Submission Date *</span>
+              <input
+                className="input-field"
+                type="date"
+                value={details.submittedAt ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, submittedAt: event.target.value })
+                }
+                required
+              />
+            </label>
+            <label className="field-group">
+              <span>Analyst or Triager (optional)</span>
+              <input
+                className="input-field"
+                value={details.analystName ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, analystName: event.target.value })
+                }
+              />
+            </label>
+            <label className="field-group md:col-span-2">
+              <span>Notes (optional)</span>
+              <textarea
+                className="input-field min-h-24 resize-y"
+                value={details.notes ?? ""}
+                onChange={(event) =>
+                  setDetails({ ...details, notes: event.target.value })
+                }
+              />
+            </label>
+            <div className="md:col-span-2 flex justify-end">
+              <button
+                className="button-primary"
+                type="button"
+                onClick={validateSubmission}
+              >
+                Confirm Submission Details
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+      <section className="editor-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-200">
+              6. Track Outcome
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Current outcome: {report.submissionDetails.outcome}
+            </p>
+          </div>
+          <label className="field-group w-60">
+            <span>Outcome</span>
+            <select
+              className="input-field"
+              value={report.submissionDetails.outcome}
+              onChange={(event) =>
+                updateOutcome(event.target.value as SubmissionOutcome)
+              }
+            >
+              {SUBMISSION_OUTCOMES.filter(
+                (item) => item !== "Not Submitted",
+              ).map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+      <ConfirmDialog
+        isOpen={confirmSubmit}
+        title={
+          progress.blocking
+            ? "Required checklist items remain"
+            : "Mark report as submitted?"
+        }
+        description={
+          progress.blocking
+            ? `${progress.blocking} required checklist item(s) remain incomplete. You can still record the submission, but review the report carefully.`
+            : "This records submission details locally and does not send anything externally."
+        }
+        confirmLabel="Mark Submitted"
+        confirmTone="primary"
+        onConfirm={markSubmitted}
+        onCancel={() => setConfirmSubmit(false)}
+      />
+    </div>
+  );
 }

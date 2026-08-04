@@ -1,18 +1,176 @@
 import type { BackupData, ParsedBackup } from "./backup";
-import { backupFilename, createFullBackupBlob, downloadBlob, parseBackupBlob } from "./backup";
+import {
+  backupFilename,
+  createFullBackupBlob,
+  downloadBlob,
+  parseBackupBlob,
+} from "./backup";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const ITERATIONS = 600_000;
-export interface EncryptedBackupContainer { application: "Bug Bounty Report Vault"; formatVersion: 1; kdf: "PBKDF2"; hash: "SHA-256"; iterations: number; salt: string; iv: string; ciphertext: string; createdAt: string; }
-function bytesToBase64(bytes: Uint8Array): string { let binary = ""; bytes.forEach((value) => { binary += String.fromCharCode(value); }); return btoa(binary); }
-function base64ToBytes(value: string): Uint8Array<ArrayBuffer> { const binary = atob(value); const bytes = new Uint8Array(new ArrayBuffer(binary.length)); for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index); return bytes; }
-function buffer(bytes: Uint8Array): ArrayBuffer { return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer; }
-async function derive(passphrase: string, salt: Uint8Array, iterations: number): Promise<CryptoKey> { const material = await crypto.subtle.importKey("raw", encoder.encode(passphrase), "PBKDF2", false, ["deriveKey"]); return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: buffer(salt), iterations }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); }
-export function passphraseGuidance(value: string): string { if (value.length < 12) return "Use at least 12 characters; a longer unique passphrase is safer."; if (value.length < 20) return "Consider a longer passphrase with several unrelated words."; return "Use a unique passphrase and store it safely; it cannot be recovered."; }
-export async function createEncryptedBackup(data: BackupData, passphrase: string, onProgress?: (stage: string, percent?: number) => void): Promise<Blob> { if (passphrase.length < 8) throw new Error("Use a passphrase with at least 8 characters."); onProgress?.("Preparing local backup", 0); const payload = await createFullBackupBlob(data, (percent) => onProgress?.("Preparing local backup", percent)); onProgress?.("Encrypting locally", 0); const salt = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(16))); const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(12))); const key = await derive(passphrase, salt, ITERATIONS); const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: buffer(iv) }, key, await payload.arrayBuffer()); onProgress?.("Encrypting locally", 100); const container: EncryptedBackupContainer = { application: "Bug Bounty Report Vault", formatVersion: 1, kdf: "PBKDF2", hash: "SHA-256", iterations: ITERATIONS, salt: bytesToBase64(salt), iv: bytesToBase64(iv), ciphertext: bytesToBase64(new Uint8Array(ciphertext)), createdAt: new Date().toISOString() }; return new Blob([JSON.stringify(container)], { type: "application/vnd.bbrvault+json" }); }
-export async function exportEncryptedBackup(data: BackupData, passphrase: string, onProgress?: (stage: string, percent?: number) => void): Promise<void> { downloadBlob(await createEncryptedBackup(data, passphrase, onProgress), backupFilename("bbrvault")); }
-function validContainer(value: unknown): value is EncryptedBackupContainer { const item = value as Partial<EncryptedBackupContainer>; return Boolean(item) && item.application === "Bug Bounty Report Vault" && item.formatVersion === 1 && item.kdf === "PBKDF2" && item.hash === "SHA-256" && typeof item.iterations === "number" && item.iterations >= 100_000 && item.iterations <= 2_000_000 && typeof item.salt === "string" && typeof item.iv === "string" && typeof item.ciphertext === "string"; }
-export async function decryptEncryptedBackup(file: File | Blob, passphrase: string, onProgress?: (stage: string, percent?: number) => void): Promise<ParsedBackup> { let container: unknown; try { container = JSON.parse(await file.text()); } catch { throw new Error("Encrypted backup container is invalid."); } if (!validContainer(container)) throw new Error("Encrypted backup container is invalid."); onProgress?.("Decrypting locally", 0); try { const key = await derive(passphrase, base64ToBytes(container.salt), container.iterations); const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buffer(base64ToBytes(container.iv)) }, key, buffer(base64ToBytes(container.ciphertext))); onProgress?.("Validating backup", 80); const parsed = await parseBackupBlob(new Blob([plaintext], { type: "application/zip" }), "decrypted-backup.zip"); onProgress?.("Validating backup", 100); return parsed; } catch { throw new Error("Unable to open the encrypted backup. Check the passphrase and package, then try again."); }
+export interface EncryptedBackupContainer {
+  application: "Bug Bounty Report Vault";
+  formatVersion: 1;
+  kdf: "PBKDF2";
+  hash: "SHA-256";
+  iterations: number;
+  salt: string;
+  iv: string;
+  ciphertext: string;
+  createdAt: string;
 }
-export function encryptedBackupSummary(): string { return decoder.decode(encoder.encode("AES-GCM authenticated encryption with PBKDF2-SHA-256 key derivation.")); }
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  bytes.forEach((value) => {
+    binary += String.fromCharCode(value);
+  });
+  return btoa(binary);
+}
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(value);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let index = 0; index < binary.length; index += 1)
+    bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+function buffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
+}
+async function derive(
+  passphrase: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<CryptoKey> {
+  const material = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(passphrase),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt: buffer(salt), iterations },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+export function passphraseGuidance(value: string): string {
+  if (value.length < 12)
+    return "Use at least 12 characters; a longer unique passphrase is safer.";
+  if (value.length < 20)
+    return "Consider a longer passphrase with several unrelated words.";
+  return "Use a unique passphrase and store it safely; it cannot be recovered.";
+}
+export async function createEncryptedBackup(
+  data: BackupData,
+  passphrase: string,
+  onProgress?: (stage: string, percent?: number) => void,
+): Promise<Blob> {
+  if (passphrase.length < 8)
+    throw new Error("Use a passphrase with at least 8 characters.");
+  onProgress?.("Preparing local backup", 0);
+  const payload = await createFullBackupBlob(data, (percent) =>
+    onProgress?.("Preparing local backup", percent),
+  );
+  onProgress?.("Encrypting locally", 0);
+  const salt = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(16)));
+  const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(12)));
+  const key = await derive(passphrase, salt, ITERATIONS);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: buffer(iv) },
+    key,
+    await payload.arrayBuffer(),
+  );
+  onProgress?.("Encrypting locally", 100);
+  const container: EncryptedBackupContainer = {
+    application: "Bug Bounty Report Vault",
+    formatVersion: 1,
+    kdf: "PBKDF2",
+    hash: "SHA-256",
+    iterations: ITERATIONS,
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+    createdAt: new Date().toISOString(),
+  };
+  return new Blob([JSON.stringify(container)], {
+    type: "application/vnd.bbrvault+json",
+  });
+}
+export async function exportEncryptedBackup(
+  data: BackupData,
+  passphrase: string,
+  onProgress?: (stage: string, percent?: number) => void,
+): Promise<void> {
+  downloadBlob(
+    await createEncryptedBackup(data, passphrase, onProgress),
+    backupFilename("bbrvault"),
+  );
+}
+function validContainer(value: unknown): value is EncryptedBackupContainer {
+  const item = value as Partial<EncryptedBackupContainer>;
+  return (
+    Boolean(item) &&
+    item.application === "Bug Bounty Report Vault" &&
+    item.formatVersion === 1 &&
+    item.kdf === "PBKDF2" &&
+    item.hash === "SHA-256" &&
+    typeof item.iterations === "number" &&
+    item.iterations >= 100_000 &&
+    item.iterations <= 2_000_000 &&
+    typeof item.salt === "string" &&
+    typeof item.iv === "string" &&
+    typeof item.ciphertext === "string"
+  );
+}
+export async function decryptEncryptedBackup(
+  file: File | Blob,
+  passphrase: string,
+  onProgress?: (stage: string, percent?: number) => void,
+): Promise<ParsedBackup> {
+  let container: unknown;
+  try {
+    container = JSON.parse(await file.text());
+  } catch {
+    throw new Error("Encrypted backup container is invalid.");
+  }
+  if (!validContainer(container))
+    throw new Error("Encrypted backup container is invalid.");
+  onProgress?.("Decrypting locally", 0);
+  try {
+    const key = await derive(
+      passphrase,
+      base64ToBytes(container.salt),
+      container.iterations,
+    );
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: buffer(base64ToBytes(container.iv)) },
+      key,
+      buffer(base64ToBytes(container.ciphertext)),
+    );
+    onProgress?.("Validating backup", 80);
+    const parsed = await parseBackupBlob(
+      new Blob([plaintext], { type: "application/zip" }),
+      "decrypted-backup.zip",
+    );
+    onProgress?.("Validating backup", 100);
+    return parsed;
+  } catch {
+    throw new Error(
+      "Unable to open the encrypted backup. Check the passphrase and package, then try again.",
+    );
+  }
+}
+export function encryptedBackupSummary(): string {
+  return decoder.decode(
+    encoder.encode(
+      "AES-GCM authenticated encryption with PBKDF2-SHA-256 key derivation.",
+    ),
+  );
+}

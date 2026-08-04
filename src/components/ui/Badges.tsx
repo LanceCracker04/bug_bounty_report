@@ -21,7 +21,9 @@ const statusStyles: Record<ReportStatus, string> = {
 };
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
-  return <span className={`badge ${severityStyles[severity]}`}>{severity}</span>;
+  return (
+    <span className={`badge ${severityStyles[severity]}`}>{severity}</span>
+  );
 }
 
 export function StatusBadge({ status }: { status: ReportStatus }) {

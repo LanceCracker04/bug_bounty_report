@@ -2,7 +2,10 @@ import type { Report } from "../types/report";
 
 const REFERENCE_PATTERN = /^BBR-(\d{4})-(\d{4,})$/;
 
-export function generateReportReference(reports: Pick<Report, "reportReference">[], date = new Date()): string {
+export function generateReportReference(
+  reports: Pick<Report, "reportReference">[],
+  date = new Date(),
+): string {
   const year = date.getFullYear();
   const highestSequence = reports.reduce((highest, report) => {
     const match = report.reportReference.match(REFERENCE_PATTERN);

@@ -1,18 +1,34 @@
 import { useState } from "react";
 import type { ParsedBackup, BackupData } from "../../utils/backup";
-import { exportFullBackup, exportMetadataBackup, parseBackupFile } from "../../utils/backup";
+import {
+  exportFullBackup,
+  exportMetadataBackup,
+  parseBackupFile,
+} from "../../utils/backup";
 import type { EvidenceScanResult } from "../../utils/evidenceCleanup";
 import { scanEvidenceStorage } from "../../utils/evidenceCleanup";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { decryptEncryptedBackup } from "../../utils/encryptedBackup";
 
 export type ImportStrategy = "skip" | "replace" | "duplicate" | "merge";
-export interface ImportResult { imported: number; skipped: number; replaced: number; duplicated: number; evidenceRestored: number; evidenceMissing: number; warnings: string[]; errors: string[]; }
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  replaced: number;
+  duplicated: number;
+  evidenceRestored: number;
+  evidenceMissing: number;
+  warnings: string[];
+  errors: string[];
+}
 
 interface DataManagementPanelProps {
   data: BackupData;
   evidenceCount: number;
-  onImport: (backup: ParsedBackup, strategy: ImportStrategy) => Promise<ImportResult>;
+  onImport: (
+    backup: ParsedBackup,
+    strategy: ImportStrategy,
+  ) => Promise<ImportResult>;
   onClearActivity: () => void;
   onCleanupEvidence: (scan: EvidenceScanResult) => Promise<void>;
   onResetTemplates: () => void;
@@ -21,15 +37,475 @@ interface DataManagementPanelProps {
   onNotify: (type: "success" | "error" | "warning", message: string) => void;
 }
 
-export function DataManagementPanel({ data, evidenceCount, onImport, onClearActivity, onCleanupEvidence, onResetTemplates, onResetKnowledge, onDeleteAll, onNotify }: DataManagementPanelProps) {
-  const [parsed, setParsed] = useState<ParsedBackup>(); const [strategy, setStrategy] = useState<ImportStrategy>("skip"); const [importing, setImporting] = useState(false); const [result, setResult] = useState<ImportResult>(); const [scan, setScan] = useState<EvidenceScanResult>(); const [processingBackup, setProcessingBackup] = useState(false); const [deleteDialog, setDeleteDialog] = useState(false); const [phrase, setPhrase] = useState(""); const [confirmClear, setConfirmClear] = useState(false); const [encryptedFile, setEncryptedFile] = useState<File>(); const [vaultPassphrase, setVaultPassphrase] = useState(""); const [vaultProgress, setVaultProgress] = useState("");
-  const usage = new Blob([JSON.stringify(data)]).size + Math.round(evidenceCount * 256);
-  const conflicts = parsed ? parsed.payload.data.reports.filter((incoming) => data.reports.some((current) => current.id === incoming.id || current.reportReference === incoming.reportReference)) : [];
-  const selectFile = async (file?: File) => { if (!file) return; setResult(undefined); if (file.name.toLowerCase().endsWith(".bbrvault")) { setEncryptedFile(file); setParsed(undefined); setVaultPassphrase(""); return; } try { const next = await parseBackupFile(file); setParsed(next); onNotify("success", "Backup validated. Review conflicts before importing."); } catch (error) { setParsed(undefined); onNotify("error", error instanceof Error ? error.message : "Backup could not be read."); } };
-  const decryptVault = async () => { if (!encryptedFile || !vaultPassphrase) return; try { setVaultProgress("Decrypting locally…"); const next = await decryptEncryptedBackup(encryptedFile, vaultPassphrase, (stage, percent) => setVaultProgress(`${stage}${percent === undefined ? "" : ` ${percent}%`}`)); setParsed(next); setEncryptedFile(undefined); setVaultPassphrase(""); onNotify("success", "Encrypted backup validated. Review its contents before importing."); } catch (error) { onNotify("error", error instanceof Error ? error.message : "Encrypted backup could not be opened."); } finally { setVaultProgress(""); } };
-  const exportMetadata = () => { try { exportMetadataBackup(data); onNotify("success", "Metadata backup download started."); } catch { onNotify("error", "Metadata backup could not be created."); } };
-  const exportFull = async () => { setProcessingBackup(true); try { await exportFullBackup(data); onNotify("success", "Full backup package download started."); } catch (error) { onNotify("error", error instanceof Error ? error.message : "Full backup could not be created."); } finally { setProcessingBackup(false); } };
-  const runImport = async () => { if (!parsed) return; setImporting(true); try { const next = await onImport(parsed, strategy); setResult(next); onNotify(next.errors.length ? "warning" : "success", next.errors.length ? "Import completed with warnings." : "Import completed."); } catch (error) { onNotify("error", error instanceof Error ? error.message : "Import failed."); } finally { setImporting(false); } };
-  const runScan = async () => { try { setScan(await scanEvidenceStorage(data.reports)); onNotify("success", "Evidence storage scan completed. Review the result before cleanup."); } catch (error) { onNotify("error", error instanceof Error ? error.message : "Evidence storage could not be scanned."); } };
-  return <section className="editor-section"><div className="section-heading"><span>06</span><div><h2>Data Management</h2><p>Back up, restore, and maintain this local workspace. Nothing is sent to a cloud service.</p></div></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[["Reports", data.reports.length], ["Custom templates", data.templates.length], ["Custom knowledge entries", data.knowledge.length], ["Activity entries", data.activity.length], ["Report snapshots", data.history.length], ["Evidence files", evidenceCount]].map(([label, value]) => <article className="rounded-md border border-slate-800 bg-[#0d1014] p-3" key={label as string}><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-xl font-semibold text-slate-100">{value}</p></article>)}<article className="rounded-md border border-slate-800 bg-[#0d1014] p-3"><p className="text-xs uppercase tracking-wide text-slate-500">Estimated metadata usage</p><p className="mt-1 text-xl font-semibold text-slate-100">{Math.max(1, Math.round(usage / 1024))} KB</p></article></div><div className="mt-6 grid gap-5 lg:grid-cols-2"><div className="rounded-md border border-slate-800 bg-[#0d1014] p-4"><h3 className="font-medium text-slate-200">Backup</h3><p className="mt-1 text-sm text-slate-500">Metadata exports exclude binary image attachments. Full packages include available IndexedDB evidence files.</p><div className="mt-4 flex flex-wrap gap-2"><button className="button-secondary" type="button" onClick={exportMetadata}>Export Metadata Backup</button><button className="button-primary" type="button" disabled={processingBackup} onClick={() => void exportFull()}>{processingBackup ? "Preparing…" : "Export Full Backup"}</button></div></div><div className="rounded-md border border-slate-800 bg-[#0d1014] p-4"><h3 className="font-medium text-slate-200">Evidence Maintenance</h3><p className="mt-1 text-sm text-slate-500">Scan before cleanup; no valid evidence is removed automatically.</p><div className="mt-4 flex gap-2"><button className="button-secondary" type="button" onClick={() => void runScan()}>Scan Evidence Storage</button>{scan && <button className="button-danger" type="button" disabled={!scan.orphanedFiles.length && !scan.missingMetadataFileIds.length && !scan.danglingStepReferences.length} onClick={() => void onCleanupEvidence(scan).then(() => { setScan(undefined); onNotify("success", "Evidence cleanup completed."); })}>Apply Safe Cleanup</button>}</div>{scan && <p className="mt-3 text-xs leading-5 text-slate-400">Orphaned files: {scan.orphanedFiles.length} · Broken image metadata: {scan.missingMetadataFileIds.length} · Dangling step references: {scan.danglingStepReferences.length}</p>}</div></div><div className="mt-6 rounded-md border border-slate-800 bg-[#0d1014] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-medium text-slate-200">Import Backup</h3><p className="mt-1 text-sm text-slate-500">Select, validate, preview conflicts, choose a strategy, then confirm. Encrypted packages are decrypted locally only after you enter the passphrase.</p></div><label className="button-secondary cursor-pointer" htmlFor="backup-import">Select Backup File<input className="sr-only" id="backup-import" type="file" accept="application/json,.json,application/zip,.zip,.bbrvault" onChange={(event) => void selectFile(event.target.files?.[0])} /></label></div>{encryptedFile && <div className="mt-4 rounded border border-slate-700 p-4"><p className="text-sm text-slate-300">Encrypted package selected: {encryptedFile.name}</p><input className="input-field mt-3 w-full" type="password" value={vaultPassphrase} onChange={(event) => setVaultPassphrase(event.target.value)} placeholder="Enter backup passphrase" /><button className="button-primary mt-3" type="button" disabled={!vaultPassphrase} onClick={() => void decryptVault()}>Decrypt and validate</button>{vaultProgress && <p className="mt-2 text-xs text-slate-400" aria-live="polite">{vaultProgress}</p>}</div>}{parsed && <div className="mt-4 space-y-4 rounded border border-slate-700 p-4"><div className="grid gap-3 sm:grid-cols-3"><p className="text-sm text-slate-300">Reports: <strong>{parsed.payload.data.reports.length}</strong></p><p className="text-sm text-slate-300">Evidence files: <strong>{parsed.evidence.length}</strong></p><p className="text-sm text-slate-300">Conflicts: <strong>{conflicts.length}</strong></p></div>{parsed.warnings.map((warning) => <p className="rounded border border-amber-900 bg-amber-950/40 p-2 text-xs text-amber-300" key={warning}>{warning}</p>)}<label className="field-group max-w-xs"><span>Conflict strategy</span><select className="input-field" value={strategy} onChange={(event) => setStrategy(event.target.value as ImportStrategy)}><option value="skip">Skip existing</option><option value="replace">Replace existing</option><option value="duplicate">Import as duplicate</option><option value="merge">Merge compatible data</option></select></label><button className="button-primary" type="button" disabled={importing} onClick={() => void runImport()}>{importing ? "Importing…" : "Confirm Import"}</button></div>}{result && <div className="mt-4 rounded border border-cyan-900 bg-cyan-950/30 p-4 text-sm text-slate-300"><p className="font-medium text-cyan-200">Import Result</p><p className="mt-2">Imported {result.imported} · Replaced {result.replaced} · Duplicated {result.duplicated} · Skipped {result.skipped} · Evidence restored {result.evidenceRestored} · Evidence missing {result.evidenceMissing}</p>{[...result.warnings, ...result.errors].map((item) => <p className="mt-1 text-xs text-amber-300" key={item}>{item}</p>)}</div>}</div><div className="mt-6 flex flex-wrap gap-2 border-t border-slate-800 pt-5"><button className="button-secondary" type="button" onClick={() => setConfirmClear(true)}>Clear Activity History</button><button className="button-secondary" type="button" onClick={onResetTemplates}>Reset Custom Templates</button><button className="button-secondary" type="button" onClick={onResetKnowledge}>Reset Custom Knowledge Entries</button><button className="button-danger" type="button" onClick={() => setDeleteDialog(true)}>Delete All Local Data</button></div><ConfirmDialog isOpen={confirmClear} title="Clear activity history?" description="This removes all local activity entries. Reports, snapshots, and evidence will remain." confirmLabel="Clear Activity" onConfirm={() => { onClearActivity(); setConfirmClear(false); onNotify("success", "Activity history cleared."); }} onCancel={() => setConfirmClear(false)} /><div className={`fixed inset-0 z-50 items-center justify-center bg-black/70 p-4 ${deleteDialog ? "flex" : "hidden"}`} role="presentation"><section className="w-full max-w-md rounded-lg border border-red-900 bg-[#161a20] p-6" role="dialog" aria-modal="true" aria-labelledby="delete-data-title"><h2 id="delete-data-title" className="text-lg font-semibold text-red-200">Delete all local data</h2><p className="mt-2 text-sm leading-6 text-slate-400">This permanently removes reports, templates, settings, knowledge entries, activity, snapshots, and IndexedDB evidence from this browser. Type <strong className="text-slate-200">DELETE ALL DATA</strong> to continue.</p><input className="input-field mt-4 w-full" value={phrase} onChange={(event) => setPhrase(event.target.value)} aria-label="Delete all data confirmation phrase" /><div className="mt-6 flex justify-end gap-3"><button className="button-secondary" type="button" onClick={() => { setDeleteDialog(false); setPhrase(""); }}>Cancel</button><button className="button-danger" type="button" disabled={phrase !== "DELETE ALL DATA"} onClick={() => void onDeleteAll().then(() => { setDeleteDialog(false); setPhrase(""); onNotify("success", "All local workspace data was deleted."); })}>Delete All Data</button></div></section></div></section>;
+export function DataManagementPanel({
+  data,
+  evidenceCount,
+  onImport,
+  onClearActivity,
+  onCleanupEvidence,
+  onResetTemplates,
+  onResetKnowledge,
+  onDeleteAll,
+  onNotify,
+}: DataManagementPanelProps) {
+  const [parsed, setParsed] = useState<ParsedBackup>();
+  const [strategy, setStrategy] = useState<ImportStrategy>("skip");
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<ImportResult>();
+  const [scan, setScan] = useState<EvidenceScanResult>();
+  const [processingBackup, setProcessingBackup] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [phrase, setPhrase] = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [encryptedFile, setEncryptedFile] = useState<File>();
+  const [vaultPassphrase, setVaultPassphrase] = useState("");
+  const [vaultProgress, setVaultProgress] = useState("");
+  const usage =
+    new Blob([JSON.stringify(data)]).size + Math.round(evidenceCount * 256);
+  const conflicts = parsed
+    ? parsed.payload.data.reports.filter((incoming) =>
+        data.reports.some(
+          (current) =>
+            current.id === incoming.id ||
+            current.reportReference === incoming.reportReference,
+        ),
+      )
+    : [];
+  const selectFile = async (file?: File) => {
+    if (!file) return;
+    setResult(undefined);
+    if (file.name.toLowerCase().endsWith(".bbrvault")) {
+      setEncryptedFile(file);
+      setParsed(undefined);
+      setVaultPassphrase("");
+      return;
+    }
+    try {
+      const next = await parseBackupFile(file);
+      setParsed(next);
+      onNotify(
+        "success",
+        "Backup validated. Review conflicts before importing.",
+      );
+    } catch (error) {
+      setParsed(undefined);
+      onNotify(
+        "error",
+        error instanceof Error ? error.message : "Backup could not be read.",
+      );
+    }
+  };
+  const decryptVault = async () => {
+    if (!encryptedFile || !vaultPassphrase) return;
+    try {
+      setVaultProgress("Decrypting locally…");
+      const next = await decryptEncryptedBackup(
+        encryptedFile,
+        vaultPassphrase,
+        (stage, percent) =>
+          setVaultProgress(
+            `${stage}${percent === undefined ? "" : ` ${percent}%`}`,
+          ),
+      );
+      setParsed(next);
+      setEncryptedFile(undefined);
+      setVaultPassphrase("");
+      onNotify(
+        "success",
+        "Encrypted backup validated. Review its contents before importing.",
+      );
+    } catch (error) {
+      onNotify(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Encrypted backup could not be opened.",
+      );
+    } finally {
+      setVaultProgress("");
+    }
+  };
+  const exportMetadata = () => {
+    try {
+      exportMetadataBackup(data);
+      onNotify("success", "Metadata backup download started.");
+    } catch {
+      onNotify("error", "Metadata backup could not be created.");
+    }
+  };
+  const exportFull = async () => {
+    setProcessingBackup(true);
+    try {
+      await exportFullBackup(data);
+      onNotify("success", "Full backup package download started.");
+    } catch (error) {
+      onNotify(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Full backup could not be created.",
+      );
+    } finally {
+      setProcessingBackup(false);
+    }
+  };
+  const runImport = async () => {
+    if (!parsed) return;
+    setImporting(true);
+    try {
+      const next = await onImport(parsed, strategy);
+      setResult(next);
+      onNotify(
+        next.errors.length ? "warning" : "success",
+        next.errors.length
+          ? "Import completed with warnings."
+          : "Import completed.",
+      );
+    } catch (error) {
+      onNotify(
+        "error",
+        error instanceof Error ? error.message : "Import failed.",
+      );
+    } finally {
+      setImporting(false);
+    }
+  };
+  const runScan = async () => {
+    try {
+      setScan(await scanEvidenceStorage(data.reports));
+      onNotify(
+        "success",
+        "Evidence storage scan completed. Review the result before cleanup.",
+      );
+    } catch (error) {
+      onNotify(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Evidence storage could not be scanned.",
+      );
+    }
+  };
+  return (
+    <section className="editor-section">
+      <div className="section-heading">
+        <span>06</span>
+        <div>
+          <h2>Data Management</h2>
+          <p>
+            Back up, restore, and maintain this local workspace. Nothing is sent
+            to a cloud service.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {[
+          ["Reports", data.reports.length],
+          ["Custom templates", data.templates.length],
+          ["Custom knowledge entries", data.knowledge.length],
+          ["Activity entries", data.activity.length],
+          ["Report snapshots", data.history.length],
+          ["Evidence files", evidenceCount],
+        ].map(([label, value]) => (
+          <article
+            className="rounded-md border border-slate-800 bg-[#0d1014] p-3"
+            key={label as string}
+          >
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              {label}
+            </p>
+            <p className="mt-1 text-xl font-semibold text-slate-100">{value}</p>
+          </article>
+        ))}
+        <article className="rounded-md border border-slate-800 bg-[#0d1014] p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-500">
+            Estimated metadata usage
+          </p>
+          <p className="mt-1 text-xl font-semibold text-slate-100">
+            {Math.max(1, Math.round(usage / 1024))} KB
+          </p>
+        </article>
+      </div>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <div className="rounded-md border border-slate-800 bg-[#0d1014] p-4">
+          <h3 className="font-medium text-slate-200">Backup</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Metadata exports exclude binary image attachments. Full packages
+            include available IndexedDB evidence files.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={exportMetadata}
+            >
+              Export Metadata Backup
+            </button>
+            <button
+              className="button-primary"
+              type="button"
+              disabled={processingBackup}
+              onClick={() => void exportFull()}
+            >
+              {processingBackup ? "Preparing…" : "Export Full Backup"}
+            </button>
+          </div>
+        </div>
+        <div className="rounded-md border border-slate-800 bg-[#0d1014] p-4">
+          <h3 className="font-medium text-slate-200">Evidence Maintenance</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Scan before cleanup; no valid evidence is removed automatically.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={() => void runScan()}
+            >
+              Scan Evidence Storage
+            </button>
+            {scan && (
+              <button
+                className="button-danger"
+                type="button"
+                disabled={
+                  !scan.orphanedFiles.length &&
+                  !scan.missingMetadataFileIds.length &&
+                  !scan.danglingStepReferences.length
+                }
+                onClick={() =>
+                  void onCleanupEvidence(scan).then(() => {
+                    setScan(undefined);
+                    onNotify("success", "Evidence cleanup completed.");
+                  })
+                }
+              >
+                Apply Safe Cleanup
+              </button>
+            )}
+          </div>
+          {scan && (
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              Orphaned files: {scan.orphanedFiles.length} · Broken image
+              metadata: {scan.missingMetadataFileIds.length} · Dangling step
+              references: {scan.danglingStepReferences.length}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="mt-6 rounded-md border border-slate-800 bg-[#0d1014] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-medium text-slate-200">Import Backup</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Select, validate, preview conflicts, choose a strategy, then
+              confirm. Encrypted packages are decrypted locally only after you
+              enter the passphrase.
+            </p>
+          </div>
+          <label
+            className="button-secondary cursor-pointer"
+            htmlFor="backup-import"
+          >
+            Select Backup File
+            <input
+              className="sr-only"
+              id="backup-import"
+              type="file"
+              accept="application/json,.json,application/zip,.zip,.bbrvault"
+              onChange={(event) => void selectFile(event.target.files?.[0])}
+            />
+          </label>
+        </div>
+        {encryptedFile && (
+          <div className="mt-4 rounded border border-slate-700 p-4">
+            <p className="text-sm text-slate-300">
+              Encrypted package selected: {encryptedFile.name}
+            </p>
+            <input
+              className="input-field mt-3 w-full"
+              type="password"
+              value={vaultPassphrase}
+              onChange={(event) => setVaultPassphrase(event.target.value)}
+              placeholder="Enter backup passphrase"
+            />
+            <button
+              className="button-primary mt-3"
+              type="button"
+              disabled={!vaultPassphrase}
+              onClick={() => void decryptVault()}
+            >
+              Decrypt and validate
+            </button>
+            {vaultProgress && (
+              <p className="mt-2 text-xs text-slate-400" aria-live="polite">
+                {vaultProgress}
+              </p>
+            )}
+          </div>
+        )}
+        {parsed && (
+          <div className="mt-4 space-y-4 rounded border border-slate-700 p-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <p className="text-sm text-slate-300">
+                Reports: <strong>{parsed.payload.data.reports.length}</strong>
+              </p>
+              <p className="text-sm text-slate-300">
+                Evidence files: <strong>{parsed.evidence.length}</strong>
+              </p>
+              <p className="text-sm text-slate-300">
+                Conflicts: <strong>{conflicts.length}</strong>
+              </p>
+            </div>
+            {parsed.warnings.map((warning) => (
+              <p
+                className="rounded border border-amber-900 bg-amber-950/40 p-2 text-xs text-amber-300"
+                key={warning}
+              >
+                {warning}
+              </p>
+            ))}
+            <label className="field-group max-w-xs">
+              <span>Conflict strategy</span>
+              <select
+                className="input-field"
+                value={strategy}
+                onChange={(event) =>
+                  setStrategy(event.target.value as ImportStrategy)
+                }
+              >
+                <option value="skip">Skip existing</option>
+                <option value="replace">Replace existing</option>
+                <option value="duplicate">Import as duplicate</option>
+                <option value="merge">Merge compatible data</option>
+              </select>
+            </label>
+            <button
+              className="button-primary"
+              type="button"
+              disabled={importing}
+              onClick={() => void runImport()}
+            >
+              {importing ? "Importing…" : "Confirm Import"}
+            </button>
+          </div>
+        )}
+        {result && (
+          <div className="mt-4 rounded border border-cyan-900 bg-cyan-950/30 p-4 text-sm text-slate-300">
+            <p className="font-medium text-cyan-200">Import Result</p>
+            <p className="mt-2">
+              Imported {result.imported} · Replaced {result.replaced} ·
+              Duplicated {result.duplicated} · Skipped {result.skipped} ·
+              Evidence restored {result.evidenceRestored} · Evidence missing{" "}
+              {result.evidenceMissing}
+            </p>
+            {[...result.warnings, ...result.errors].map((item) => (
+              <p className="mt-1 text-xs text-amber-300" key={item}>
+                {item}
+              </p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-800 pt-5">
+        <button
+          className="button-secondary"
+          type="button"
+          onClick={() => setConfirmClear(true)}
+        >
+          Clear Activity History
+        </button>
+        <button
+          className="button-secondary"
+          type="button"
+          onClick={onResetTemplates}
+        >
+          Reset Custom Templates
+        </button>
+        <button
+          className="button-secondary"
+          type="button"
+          onClick={onResetKnowledge}
+        >
+          Reset Custom Knowledge Entries
+        </button>
+        <button
+          className="button-danger"
+          type="button"
+          onClick={() => setDeleteDialog(true)}
+        >
+          Delete All Local Data
+        </button>
+      </div>
+      <ConfirmDialog
+        isOpen={confirmClear}
+        title="Clear activity history?"
+        description="This removes all local activity entries. Reports, snapshots, and evidence will remain."
+        confirmLabel="Clear Activity"
+        onConfirm={() => {
+          onClearActivity();
+          setConfirmClear(false);
+          onNotify("success", "Activity history cleared.");
+        }}
+        onCancel={() => setConfirmClear(false)}
+      />
+      <div
+        className={`fixed inset-0 z-50 items-center justify-center bg-black/70 p-4 ${deleteDialog ? "flex" : "hidden"}`}
+        role="presentation"
+      >
+        <section
+          className="w-full max-w-md rounded-lg border border-red-900 bg-[#161a20] p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-data-title"
+        >
+          <h2
+            id="delete-data-title"
+            className="text-lg font-semibold text-red-200"
+          >
+            Delete all local data
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            This permanently removes reports, templates, settings, knowledge
+            entries, activity, snapshots, and IndexedDB evidence from this
+            browser. Type{" "}
+            <strong className="text-slate-200">DELETE ALL DATA</strong> to
+            continue.
+          </p>
+          <input
+            className="input-field mt-4 w-full"
+            value={phrase}
+            onChange={(event) => setPhrase(event.target.value)}
+            aria-label="Delete all data confirmation phrase"
+          />
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={() => {
+                setDeleteDialog(false);
+                setPhrase("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="button-danger"
+              type="button"
+              disabled={phrase !== "DELETE ALL DATA"}
+              onClick={() =>
+                void onDeleteAll().then(() => {
+                  setDeleteDialog(false);
+                  setPhrase("");
+                  onNotify("success", "All local workspace data was deleted.");
+                })
+              }
+            >
+              Delete All Data
+            </button>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
 }

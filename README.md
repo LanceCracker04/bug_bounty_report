@@ -2,6 +2,11 @@
 
 Bug Bounty Report is a private, browser-based workspace for turning authorized security findings into clear, evidence-backed bug-bounty reports. It helps independent researchers and security teams document a finding from first observation through submission, triage, remediation, and retesting.
 
+## Windows launcher
+
+1. Run `scripts/Create-BBR-Shortcut.ps1` once.
+2. Double-click the **Bug Bounty Report** desktop shortcut whenever using the app.
+
 The application is designed to make reports easier for triage teams to verify: each report captures the affected asset, severity, CVSS context, expected and observed behavior, reproducible steps, evidence, impact, and recommended remediation. It supports workflows commonly used with HackerOne, Bugcrowd, Intigriti, YesWeHack, private programs, and direct disclosure.
 
 ## What it helps you do

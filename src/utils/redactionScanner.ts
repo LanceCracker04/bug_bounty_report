@@ -1,5 +1,96 @@
 export type RedactionConfidence = "High" | "Medium" | "Low";
-export interface RedactionFinding { id: string; category: string; confidence: RedactionConfidence; section: string; start: number; end: number; maskedPreview: string; explanation: string; fingerprint: string; }
-const rules: Array<[string, RegExp, RedactionConfidence, string]> = [["Bearer token", /Bearer\s+[A-Za-z0-9._~+/=-]{20,}/gi, "High", "Authorization header may contain a bearer token."],["JWT-like value", /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, "High", "This resembles a JSON Web Token."],["Private key block", /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "High", "Private key material should not be submitted."],["Password assignment", /(?:password|passwd|secret)\s*[:=]\s*[^\s,;]{8,}/gi, "High", "A password-like assignment was found."],["Email address", /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "Medium", "Email addresses may be personal information."],["Phone number", /\b(?:\+?\d[\d ()-]{8,}\d)\b/g, "Medium", "This resembles a phone number."],["Internal hostname", /\b[a-z0-9.-]+\.(?:internal|local|corp|lan)\b/gi, "Medium", "This may expose an internal hostname."]];
-export function scanReportText(fields: Record<string, string>): RedactionFinding[] { const findings: RedactionFinding[] = []; for (const [section, text] of Object.entries(fields)) for (const [category, regex, confidence, explanation] of rules) { regex.lastIndex = 0; let match: RegExpExecArray | null; while ((match = regex.exec(text))) { const raw = match[0]; const fingerprint = `${category}:${raw.length}:${raw.slice(0, 3)}:${raw.slice(-3)}`; findings.push({ id: `${section}-${match.index}-${category}`, category, confidence, section, start: match.index, end: match.index + raw.length, maskedPreview: raw.length > 8 ? `${raw.slice(0, 3)}•••${raw.slice(-3)}` : "••••••", explanation, fingerprint }); } } return findings; }
-export function maskText(text: string, findings: RedactionFinding[], label = "[REDACTED]"): string { return [...findings].sort((a, b) => b.start - a.start).reduce((value, finding) => value.slice(0, finding.start) + label + value.slice(finding.end), text); }
+export interface RedactionFinding {
+  id: string;
+  category: string;
+  confidence: RedactionConfidence;
+  section: string;
+  start: number;
+  end: number;
+  maskedPreview: string;
+  explanation: string;
+  fingerprint: string;
+}
+const rules: Array<[string, RegExp, RedactionConfidence, string]> = [
+  [
+    "Bearer token",
+    /Bearer\s+[A-Za-z0-9._~+/=-]{20,}/gi,
+    "High",
+    "Authorization header may contain a bearer token.",
+  ],
+  [
+    "JWT-like value",
+    /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
+    "High",
+    "This resembles a JSON Web Token.",
+  ],
+  [
+    "Private key block",
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
+    "High",
+    "Private key material should not be submitted.",
+  ],
+  [
+    "Password assignment",
+    /(?:password|passwd|secret)\s*[:=]\s*[^\s,;]{8,}/gi,
+    "High",
+    "A password-like assignment was found.",
+  ],
+  [
+    "Email address",
+    /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+    "Medium",
+    "Email addresses may be personal information.",
+  ],
+  [
+    "Phone number",
+    /\b(?:\+?\d[\d ()-]{8,}\d)\b/g,
+    "Medium",
+    "This resembles a phone number.",
+  ],
+  [
+    "Internal hostname",
+    /\b[a-z0-9.-]+\.(?:internal|local|corp|lan)\b/gi,
+    "Medium",
+    "This may expose an internal hostname.",
+  ],
+];
+export function scanReportText(
+  fields: Record<string, string>,
+): RedactionFinding[] {
+  const findings: RedactionFinding[] = [];
+  for (const [section, text] of Object.entries(fields))
+    for (const [category, regex, confidence, explanation] of rules) {
+      regex.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(text))) {
+        const raw = match[0];
+        const fingerprint = `${category}:${raw.length}:${raw.slice(0, 3)}:${raw.slice(-3)}`;
+        findings.push({
+          id: `${section}-${match.index}-${category}`,
+          category,
+          confidence,
+          section,
+          start: match.index,
+          end: match.index + raw.length,
+          maskedPreview:
+            raw.length > 8 ? `${raw.slice(0, 3)}•••${raw.slice(-3)}` : "••••••",
+          explanation,
+          fingerprint,
+        });
+      }
+    }
+  return findings;
+}
+export function maskText(
+  text: string,
+  findings: RedactionFinding[],
+  label = "[REDACTED]",
+): string {
+  return [...findings]
+    .sort((a, b) => b.start - a.start)
+    .reduce(
+      (value, finding) =>
+        value.slice(0, finding.start) + label + value.slice(finding.end),
+      text,
+    );
+}
