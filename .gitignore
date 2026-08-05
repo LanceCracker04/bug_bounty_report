@@ -1,17 +1,14 @@
 # Dependencies
 node_modules/
 
-# Production builds
+# Production build
 dist/
-.dist/
+dist-ssr/
 
 # Environment variables
 .env
 .env.*
 !.env.example
-
-# Vercel
-.vercel/
 
 # Logs
 *.log
@@ -19,19 +16,16 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# Editor and OS files
+# Editor settings
 .vscode/
 .idea/
+
+# Operating system files
 .DS_Store
 Thumbs.db
-*.lnk
 
-# Local backups and exports
-*.zip
-*.bbrvault
-*.har
+# Vercel local files
+.vercel/
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
+# TypeScript cache
+*.tsbuildinfo
